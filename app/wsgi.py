@@ -14,6 +14,8 @@ if os.path.isdir(VENDOR) and VENDOR not in sys.path:
     sys.path.insert(0, VENDOR)
 
 from app import app  # noqa: E402
+from db import init_db
+init_db()
 
 if __name__ == "__main__":
     from waitress import serve
