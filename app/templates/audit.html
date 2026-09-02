@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}سجل التدقيق{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>سجل التدقيق</h1>
+<p>كل إنشاء أو تعديل أو إلغاء للفواتير والتحصيلات والشيكات وحالاتها والقواعد</p></div></div>
+{{ filter_bar(f, ['q','date_from'], search_hint='مستخدم أو إجراء أو رقم مستند') }}
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>الكيان</th><th>المرجع</th><th>التفاصيل</th><th>السبب</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td class="n">{{ r.at }}</td><td>{{ r.user_name or 'النظام' }}</td>
+<td><span class="tag {{ 't-bad' if r.action in ('void','bounce','late_reversal') else ('t-warn' if r.action in ('update','clear') else 't-neu') }}">{{ r.action }}</span></td>
+<td>{{ r.entity }}</td><td class="ref">{{ r.entity_ref or '—' }}</td>
+<td class="small muted" style="max-width:380px;word-break:break-word">{{ r.details or '' }}</td>
+<td class="small">{{ r.reason or '' }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">لا توجد سجلات تطابق الفلتر.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

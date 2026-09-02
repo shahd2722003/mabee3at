@@ -1,0 +1,84 @@
+{% extends "base.html" %}{% block title %}{{ inv.ref_no }}{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1 class="ref" style="font-size:22px">{{ inv.ref_no }}</h1>
+<p>{{ inv.cust }} · المندوب {{ inv.rep }} · بتاريخ {{ inv.invoice_date }}
+{% if inv.external_ref %} · مرجع خارجي {{ inv.external_ref }}{% endif %}</p>
+<p>{% if inv.invoice_kind=='aggregate' %}<span class="tag kind-agg">فاتورة تاريخية إجمالية / بدون أصناف</span>
+{% else %}<span class="tag kind-det">فاتورة تفصيلية بأصناف</span>{% endif %}
+{% if inv.is_historical %} <span class="tag t-neu">تاريخية</span>{% endif %}
+{% if inv.late_reversed > 0 %} <span class="tag t-bad">عُكست عمولة {{ fmt(inv.late_reversed) }} لتأخر التحصيل</span>{% endif %}</p></div>
+<div class="row-actions no-print"><button class="btn ghost" onclick="print()">طباعة</button>
+{% if user.role=='admin' and inv.status=='posted' %}
+<form method="post" action="{{ url_for('invoice_void', iid=inv.id) }}" onsubmit="return confirm('إلغاء الفاتورة نهائياً؟')">
+  <input type="hidden" name="reason" value="إلغاء بصلاحية مدير"><button class="btn danger">إلغاء الفاتورة</button></form>{% endif %}</div></div>
+
+<div class="grid g4" style="margin-bottom:18px">
+  <div class="kpi"><span>الإجمالي بعد الخصم</span><b>{{ fmt(inv.total) }}</b></div>
+  <div class="kpi teal"><span>المحصَّل</span><b>{{ fmt(inv.collected_total) }}</b></div>
+  <div class="kpi"><span>المرتجعات</span><b>{{ fmt(inv.returned_total) }}</b></div>
+  <div class="kpi clay"><span>المتبقي</span><b>{{ fmt(inv.total - inv.returned_total - inv.collected_total) }}</b></div>
+</div>
+
+{% if inv.invoice_kind=='aggregate' %}
+<div class="card"><h3>تفاصيل الفاتورة الإجمالية</h3><div class="body"><table>
+<tr><td>القيمة قبل الخصم (محتسبة)</td><td class="n">{{ fmt(inv.subtotal) }}</td></tr>
+<tr><td>الخصم {{ inv.discount_pct }}%</td><td class="n">−{{ fmt(inv.discount_amount) }}</td></tr>
+<tr><td>القيمة الإجمالية النهائية</td><td class="n"><b>{{ fmt(inv.total) }}</b></td></tr>
+<tr><td>مدة السداد / الاستحقاق</td><td class="n">{{ inv.credit_days }} يوم · {{ inv.due_date }}</td></tr>
+<tr><td>نهاية مهلة السماح قبل عكس العمولة</td><td class="n">{{ deadline }}</td></tr>
+{% if inv.notes %}<tr><td>ملاحظات</td><td>{{ inv.notes }}</td></tr>{% endif %}
+</table>
+<p class="small muted" style="margin-top:10px">هذه الفاتورة بلا أصناف: لا تؤثر في المخزون ولا تظهر في تقرير مبيعات الأصناف،
+لكنها تدخل في رصيد العميل والتحصيلات و FIFO والعمولة والبونص وتقارير المبيعات بالقيمة.</p>
+</div></div>
+{% else %}
+<div class="card"><h3>البنود</h3><div class="tbl-wrap"><table>
+<thead><tr><th>الكود</th><th>الصنف</th><th>اللون</th><th>المقاس</th><th class="n">الكمية</th>
+<th class="n">السعر</th><th class="n">الإجمالي</th></tr></thead>
+<tbody>{% for l in lines %}<tr><td class="ref">{{ l.code }}</td><td>{{ l.name }}</td><td>{{ l.color or '—' }}</td>
+<td>{{ l.size or '—' }}</td><td class="n">{{ '%g'|format(l.qty) }}</td><td class="n">{{ fmt(l.unit_price) }}</td>
+<td class="n">{{ fmt(l.line_total) }}</td></tr>{% endfor %}</tbody>
+<tfoot>
+<tr><td colspan="6">الإجمالي قبل الخصم</td><td class="n">{{ fmt(inv.subtotal) }}</td></tr>
+<tr><td colspan="6">الخصم {{ inv.discount_pct }}% · مدة السداد {{ inv.credit_days }} يوم · الاستحقاق {{ inv.due_date }}</td>
+<td class="n">−{{ fmt(inv.discount_amount) }}</td></tr>
+<tr><td colspan="6">الصافي</td><td class="n">{{ fmt(inv.total) }}</td></tr>
+<tr><td colspan="6">نهاية مهلة السماح قبل عكس العمولة</td><td class="n">{{ deadline }}</td></tr>
+</tfoot></table></div></div>
+{% endif %}
+
+<div class="card"><h3>التحصيلات والمرتجعات المخصصة (FIFO)</h3><div class="tbl-wrap">
+{% if allocs %}<table><thead><tr><th>التاريخ</th><th>النوع</th><th>المستند</th><th class="n">المبلغ</th></tr></thead>
+<tbody>{% for a in allocs %}<tr><td class="n">{{ a.alloc_date }}</td>
+<td>{% if a.source_type=='collection' %}<span class="tag t-ok">دفعة {{ METHODS[a.method] }}</span>
+  {% if a.chq_status %}<br><span class="tag {{ 't-warn' if a.chq_status=='pending' else ('t-ok' if a.chq_status=='cleared' else 't-bad') }}">شيك {{ CHQ_LABELS[a.chq_status] }} · استحقاق {{ a.chq_due }}</span>{% endif %}
+{% else %}<span class="tag t-warn">مرتجع</span>{% endif %}</td>
+<td class="ref">{{ a.coll_ref or a.ret_ref }}{% if a.cheque_number %}<br><span class="small muted">#{{ a.cheque_number }}</span>{% endif %}</td>
+<td class="n">{{ fmt(a.amount) }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<div class="empty">لم يُخصَّص لهذه الفاتورة أي تحصيل بعد.</div>{% endif %}</div></div>
+
+<div class="card"><h3>سجل التدقيق لهذه الفاتورة</h3><div class="tbl-wrap"><table>
+<thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>التفاصيل</th><th>السبب</th></tr></thead>
+<tbody>{% for t in trail %}<tr><td class="n">{{ t.at }}</td><td>{{ t.user_name or 'النظام' }}</td>
+<td><span class="tag {{ 't-bad' if t.action in ('void','late_reversal') else 't-neu' }}">{{ t.action }}</span></td>
+<td class="small muted" style="max-width:420px;word-break:break-word">{{ t.details or '' }}</td>
+<td class="small">{{ t.reason or '' }}</td></tr>{% endfor %}</tbody></table></div></div>
+
+<div class="card"><h3>حساب العمولة والبونص</h3><div class="body">
+{% if comms %}{% for c in comms %}
+<div style="margin-bottom:14px">
+  <div class="small" style="margin-bottom:5px">
+    <span class="tag {{ 't-neu' if c.entry_type=='earn' else 't-bad' }}">{{ ENTRY_TYPES[c.entry_type] }}</span>
+    <span class="muted">تاريخ الاستحقاق {{ c.recognized_on }}</span>
+    {% if c.status=='accrued' %}<span class="tag t-warn">معلّقة حتى استحقاق الشيك</span>{% endif %}
+    &nbsp;·&nbsp; عمولة <b class="num">{{ fmt(c.commission_amt) }}</b> + بونص <b class="num">{{ fmt(c.bonus_amt) }}</b>
+  </div>
+  <div class="trace">{{ c.calc_trace }}</div>
+</div>
+{% endfor %}
+{% else %}<p class="muted">لا توجد عمولة بعد — تُحتسب عند تخصيص دفعة على الفاتورة،
+وفي حالة الشيك عند تاريخ استحقاقه.</p>{% endif %}
+<details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">القواعد المجمَّدة على هذه الفاتورة وقت إنشائها</summary>
+<div class="trace" style="margin-top:8px">{{ snap|tojson(indent=2) }}</div></details>
+</div></div>
+{% endblock %}

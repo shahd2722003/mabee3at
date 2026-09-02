@@ -1,0 +1,27 @@
+# التبعيات
+node_modules/
+
+# مخرجات البناء — مجلد dist ليس منها، هو مصدر التطبيق
+release/
+*.exe
+*.blockmap
+
+# بيانات وأسرار محلية
+session.key
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# بايثون
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# نظام التشغيل والمحررات
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+npm-debug.log*

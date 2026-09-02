@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}العمولات والبونص{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>عمولات وبونص المندوبين</h1>
+<p>الفترة محسوبة بتاريخ استحقاق العمولة: تاريخ التحصيل للكاش والتحويل، وتاريخ استحقاق الشيك للشيكات</p></div>
+<button class="btn ghost no-print" onclick="print()">طباعة</button></div>
+
+{{ filter_bar(f, ['q','customer_id','rep_id','date_from','method','kind','entry_type','days_min','disc_min'],
+              customers=customers, reps=reps, search_hint='رقم الفاتورة أو الدفعة أو اسم العميل') }}
+
+<div class="card"><h3>الملخص</h3><div class="tbl-wrap"><table>
+<thead><tr><th>المندوب</th><th class="n">مستحقة</th><th class="n">معلّقة</th><th class="n">معكوسة</th>
+<th class="n">عكس تأخير</th><th class="n">إجمالي العمولة</th><th class="n">إجمالي البونص</th><th class="n">الصافي</th></tr></thead>
+<tbody>{% for s in summary %}<tr><td>{{ s.name }}</td>
+<td class="n" style="color:var(--teal)">{{ fmt(s.earned) }}</td>
+<td class="n" style="color:var(--brass)">{{ fmt(s.accrued) }}</td>
+<td class="n" style="color:var(--clay)">{{ fmt(s.reversed) }}</td>
+<td class="n" style="color:var(--clay)">{{ fmt(s.late_rev) }}</td>
+<td class="n">{{ fmt(s.comm) }}</td><td class="n">{{ fmt(s.bonus) }}</td>
+<td class="n" style="color:var(--brass);font-weight:600">{{ fmt(s.total) }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">لا بيانات في هذه الفترة.</td></tr>{% endfor %}</tbody>
+<tfoot><tr><td>الإجمالي</td>
+<td class="n">{{ fmt(summary|sum(attribute='earned') or 0) }}</td>
+<td class="n">{{ fmt(summary|sum(attribute='accrued') or 0) }}</td>
+<td class="n">{{ fmt(summary|sum(attribute='reversed') or 0) }}</td>
+<td class="n">{{ fmt(summary|sum(attribute='late_rev') or 0) }}</td>
+<td class="n">{{ fmt(summary|sum(attribute='comm') or 0) }}</td>
+<td class="n">{{ fmt(summary|sum(attribute='bonus') or 0) }}</td>
+<td class="n">{{ fmt(summary|sum(attribute='total') or 0) }}</td></tr></tfoot></table></div></div>
+
+<div class="card"><h3>التفاصيل وطريقة الحساب</h3><div class="tbl-wrap"><table>
+<thead><tr><th>الاستحقاق</th><th>النوع</th><th>المندوب</th><th>الفاتورة</th><th>العميل</th><th>الدفعة</th>
+<th class="n">الأساس</th><th class="n">خصم</th><th class="n">عمولة</th><th class="n">أيام</th>
+<th class="n">بونص</th><th class="n">الإجمالي</th></tr></thead>
+<tbody>{% for r in rows %}
+<tr class="rowline" {% if r.entry_type != 'earn' %}style="background:var(--clay-soft)"{% endif %}>
+<td class="n">{{ r.recognized_on }}{% if r.status=='accrued' %}<br><span class="tag t-warn">معلّقة</span>{% endif %}</td>
+<td><span class="tag {{ 't-neu' if r.entry_type=='earn' else 't-bad' }}">{{ ENTRY_TYPES[r.entry_type] }}</span></td>
+<td>{{ r.rep }}</td>
+<td class="ref">{{ r.inv_ref }}{% if r.invoice_kind=='aggregate' %}<br><span class="tag kind-agg">إجمالية</span>{% endif %}</td>
+<td>{{ r.cust }}</td>
+<td class="ref">{{ r.coll_ref or '—' }}{% if r.method %}<br><span class="small muted">{{ METHODS[r.method] }}</span>{% endif %}</td>
+<td class="n">{{ fmt(r.base_amount) }}</td><td class="n">{{ r.discount_pct }}%</td>
+<td class="n">{{ r.commission_pct }}% = {{ fmt(r.commission_amt) }}</td>
+<td class="n">{{ r.days_taken }}</td>
+<td class="n">{{ r.bonus_pct }}% = {{ fmt(r.bonus_amt) }}</td>
+<td class="n"><b>{{ fmt(r.commission_amt + r.bonus_amt) }}</b></td></tr>
+<tr><td colspan="12" style="padding-top:0;border-bottom:2px solid var(--line)"><div class="trace">{{ r.calc_trace }}</div></td></tr>
+{% else %}<tr><td colspan="12" class="empty">لا توجد قيود تطابق الفلتر.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

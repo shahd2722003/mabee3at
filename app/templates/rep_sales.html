@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}تقرير المبيعات{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>تقرير المبيعات</h1>
+<p>الفواتير التاريخية الإجمالية معروضة منفصلة عن فواتير الأصناف</p></div>
+<button class="btn ghost no-print" onclick="print()">طباعة</button></div>
+
+{{ filter_bar(f, ['customer_id','rep_id','item_id','date_from','method','kind','disc_min'],
+              customers=customers, reps=reps, items=items) }}
+
+{% set det = by_kind.get('detailed') %}{% set agg = by_kind.get('aggregate') %}
+<div class="grid g3" style="margin-bottom:18px">
+  <div class="kpi"><span>فواتير الأصناف ({{ det.n if det else 0 }})</span><b>{{ fmt(det.net if det else 0) }}</b></div>
+  <div class="kpi brass"><span>فواتير تاريخية إجمالية ({{ agg.n if agg else 0 }})</span><b>{{ fmt(agg.net if agg else 0) }}</b></div>
+  <div class="kpi teal"><span>إجمالي المبيعات بالقيمة</span><b>{{ fmt((det.net if det else 0) + (agg.net if agg else 0)) }}</b></div>
+</div>
+
+<div class="grid g2">
+<div class="card"><h3>حسب المندوب</h3><div class="tbl-wrap"><table>
+<thead><tr><th>المندوب</th><th class="n">فواتير</th><th class="n">أصناف</th><th class="n">إجمالية</th><th class="n">الإجمالي</th></tr></thead>
+<tbody>{% for r in by_rep %}<tr><td>{{ r.name }}</td><td class="n">{{ r.n }}</td>
+<td class="n">{{ fmt(r.detailed) }}</td><td class="n">{{ fmt(r.aggregate) }}</td><td class="n"><b>{{ fmt(r.net) }}</b></td></tr>
+{% else %}<tr><td colspan="5" class="empty">لا بيانات.</td></tr>{% endfor %}</tbody></table></div></div>
+
+<div class="card"><h3>حسب العميل</h3><div class="tbl-wrap"><table>
+<thead><tr><th>العميل</th><th class="n">فواتير</th><th class="n">أصناف</th><th class="n">إجمالية</th><th class="n">الإجمالي</th></tr></thead>
+<tbody>{% for r in by_cust %}<tr><td>{{ r.name }}</td><td class="n">{{ r.n }}</td>
+<td class="n">{{ fmt(r.detailed) }}</td><td class="n">{{ fmt(r.aggregate) }}</td><td class="n"><b>{{ fmt(r.net) }}</b></td></tr>
+{% else %}<tr><td colspan="5" class="empty">لا بيانات.</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+
+<div class="card"><h3>حسب الصنف <span class="small muted">— فواتير الأصناف فقط، الفواتير الإجمالية غير مشمولة</span></h3>
+<div class="tbl-wrap"><table>
+<thead><tr><th>الكود</th><th>الصنف</th><th>اللون</th><th>المقاس</th><th class="n">الكمية</th>
+<th class="n">قبل الخصم</th><th class="n">الصافي</th></tr></thead>
+<tbody>{% for r in by_item %}<tr><td class="ref">{{ r.code }}</td><td>{{ r.name }}</td><td>{{ r.color or '—' }}</td>
+<td>{{ r.size or '—' }}</td><td class="n">{{ '%g'|format(r.qty) }}</td><td class="n">{{ fmt(r.gross) }}</td>
+<td class="n">{{ fmt(r.net) }}</td></tr>{% else %}<tr><td colspan="7" class="empty">لا بيانات.</td></tr>{% endfor %}</tbody>
+<tfoot><tr><td colspan="4">الإجمالي</td><td class="n">{{ '%g'|format(by_item|sum(attribute='qty') or 0) }}</td>
+<td class="n">{{ fmt(by_item|sum(attribute='gross') or 0) }}</td>
+<td class="n">{{ fmt(by_item|sum(attribute='net') or 0) }}</td></tr></tfoot></table></div></div>
+{% endblock %}

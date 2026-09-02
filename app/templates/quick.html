@@ -1,0 +1,155 @@
+{% extends "base.html" %}{% block title %}الإدخال السريع{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>الإدخال السريع المتتابع</h1>
+<p>لتسجيل عدد كبير من الحركات القديمة لنفس العميل من الصفحة نفسها — يبقى العميل وإعداداته ثابتة بعد كل حفظ</p></div>
+<div class="row-actions no-print small muted">
+  <span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> حفظ وإضافة أخرى</span>
+</div></div>
+
+<div class="tabs no-print">
+  {% for k, label in modes.items() %}
+  <a href="{{ url_for('quick', mode=k) }}" class="{{ 'on' if mode==k }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="quick-grid">
+<div>
+<form method="post" action="{{ url_for('quick', mode=mode) }}" id="qf">
+<div class="card"><h3>{{ modes[mode] }}</h3><div class="body">
+  <div class="grid g3">
+    <div class="field"><label>العميل <span class="small muted">(يبقى ثابتاً)</span></label>
+      <select name="customer_id" id="cust" required>
+        <option value="">— اختر —</option>
+        {% for c in custs %}<option value="{{ c.id }}" {{ 'selected' if st.customer_id == c.id }}>{{ c.code }} · {{ c.name }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label>المندوب</label><select name="rep_id" id="rep">
+      <option value="">حسب العميل</option>
+      {% for r in reps %}<option value="{{ r.id }}" {{ 'selected' if st.rep_id == r.id }}>{{ r.name }}</option>{% endfor %}
+    </select></div>
+
+    {% if mode == 'invoice' %}
+    <div class="field"><label>طريقة الدفع</label><select name="payment_method">
+      {% for k,v in METHODS.items() %}<option value="{{ k }}" {{ 'selected' if st.payment_method == k }}>{{ v }}</option>{% endfor %}
+    </select></div>
+    <div class="field focus-field"><label>تاريخ الفاتورة</label>
+      <input type="date" name="invoice_date" id="first" value="{{ today }}" required></div>
+    <div class="field focus-field"><label>القيمة الإجمالية النهائية</label>
+      <input type="number" step="0.01" min="0.01" name="total_amount" id="second" required></div>
+    <div class="field"><label>نسبة الخصم %</label>
+      <input type="number" step="0.01" name="discount_pct" id="disc" value="{{ st.discount_pct }}"></div>
+    <div class="field"><label>مدة السداد (أيام)</label>
+      <input type="number" name="credit_days" id="days" value="{{ st.credit_days }}"></div>
+    <div class="field"><label>تاريخ الاستحقاق (اختياري)</label><input type="date" name="due_date"></div>
+    <div class="field"><label>رقم مرجعي (اختياري)</label><input name="external_ref"></div>
+
+    {% elif mode == 'collection' %}
+    <div class="field"><label>وسيلة التحصيل</label><select name="method">
+      <option value="cash" {{ 'selected' if st.method=='cash' }}>كاش</option>
+      <option value="transfer" {{ 'selected' if st.method=='transfer' }}>تحويل بنكي</option>
+    </select></div>
+    <div class="field focus-field"><label>تاريخ التحصيل</label>
+      <input type="date" name="collection_date" id="first" value="{{ today }}" required></div>
+    <div class="field focus-field"><label>القيمة</label>
+      <input type="number" step="0.01" min="0.01" name="amount" id="second" required></div>
+
+    {% else %}
+    <div class="field focus-field"><label>قيمة الشيك</label>
+      <input type="number" step="0.01" min="0.01" name="amount" id="first" required></div>
+    <div class="field focus-field"><label>تاريخ الاستلام</label>
+      <input type="date" name="received_date" id="second" value="{{ today }}" required></div>
+    <div class="field"><label>تاريخ الاستحقاق</label>
+      <input type="date" name="cheque_due_date" required></div>
+    <div class="field"><label>رقم الشيك</label><input name="cheque_number"></div>
+    <div class="field"><label>البنك</label><input name="bank_name"></div>
+    {% endif %}
+
+    <div class="field"><label>ملاحظات</label><input name="notes"></div>
+  </div>
+
+  {% if mode != 'invoice' %}
+  <div class="card" style="margin:6px 0 0"><h3>معاينة التوزيع (FIFO)</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>الفاتورة</th><th>التاريخ</th>
+      <th class="n">المتبقي عليها</th><th class="n">سيُخصَّص</th></tr></thead>
+      <tbody id="plan"><tr><td colspan="4" class="empty">أدخل القيمة لعرض التوزيع.</td></tr></tbody></table></div>
+    <div class="body small" id="rest"></div></div>
+  {% endif %}
+
+  <div class="row-actions" style="margin-top:12px">
+    <button class="btn">حفظ وإضافة {{ 'فاتورة أخرى' if mode=='invoice' else ('تحصيل آخر' if mode=='collection' else 'شيك آخر') }}</button>
+    <button class="btn ghost" name="reset" value="1" formnovalidate>إنهاء الجلسة</button>
+  </div>
+</div></div>
+</form>
+</div>
+
+<aside>
+<div class="card sess"><h3>ملخص جلسة {{ cust.name if cust else 'الإدخال' }}</h3><div class="body">
+  {% if cust %}
+  <table style="font-size:13.5px">
+    <tr><td>الرصيد قبل الإدخال</td><td class="n"><b>{{ fmt(st.opening_balance) }}</b></td></tr>
+    <tr><td>عدد الحركات في الجلسة</td><td class="n"><b>{{ st.log|length }}</b></td></tr>
+    <tr><td>صافي الحركات المضافة</td><td class="n"><b>{{ fmt(st.log|sum(attribute='amount')) }}</b></td></tr>
+    <tr><td>الرصيد بعد الإدخال</td><td class="n"><b style="color:var(--indigo);font-size:16px">{{ fmt(now_balance) }}</b></td></tr>
+  </table>
+  {% else %}
+  <p class="muted small">اختر عميلاً وابدأ الحفظ — سيظهر هنا الرصيد قبل وبعد الإدخال.</p>
+  {% endif %}
+</div></div>
+
+<div class="card"><h3>الحركات المضافة في هذه الجلسة</h3><div class="tbl-wrap">
+  {% if st.log %}<table>
+    <thead><tr><th>المستند</th><th>التاريخ</th><th class="n">القيمة</th></tr></thead>
+    <tbody>{% for l in st.log|reverse %}<tr>
+      <td><span class="ref">{{ l.ref }}</span><br><span class="small muted">{{ l.kind }}</span></td>
+      <td class="n">{{ l.date }}</td>
+      <td class="n" style="color:{{ 'var(--clay)' if l.amount > 0 else 'var(--teal)' }}">{{ fmt(l.amount) }}</td>
+    </tr>{% endfor %}</tbody></table>
+  {% else %}<div class="empty small">لم تُسجَّل حركات بعد.</div>{% endif %}
+</div></div>
+</aside>
+</div>
+
+<script>
+// اختصارات لوحة المفاتيح
+document.addEventListener('keydown', e=>{
+  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); document.getElementById('qf').submit(); }
+});
+// التركيز مباشرة على أول حقلين السريعين
+window.addEventListener('load', ()=>{
+  const el = document.getElementById('cust').value
+    ? document.getElementById('{{ 'second' if mode == 'invoice' else 'first' }}')
+    : document.getElementById('cust');
+  if (el) { el.focus(); if (el.select) el.select(); }
+});
+
+const custSel = document.getElementById('cust');
+custSel.addEventListener('change', async e=>{
+  if(!e.target.value) return;
+  const c = await (await fetch('/api/customer/'+e.target.value)).json();
+  const rep=document.getElementById('rep'); if(rep) rep.value=c.rep_id;
+  const d=document.getElementById('disc'), dy=document.getElementById('days');
+  if(d && !d.value) d.value=c.discount_pct;
+  if(dy && !dy.value) dy.value=c.credit_days;
+  preview();
+});
+
+{% if mode != 'invoice' %}
+async function preview(){
+  const c=custSel.value;
+  const amt=document.querySelector('[name=amount]').value;
+  if(!c||!amt) return;
+  const d = await (await fetch(`/api/fifo-preview?customer_id=${c}&amount=${amt}`)).json();
+  document.getElementById('plan').innerHTML = d.plan.length ? d.plan.map(p=>
+    `<tr><td class="ref">${p.ref_no}</td><td class="n">${p.invoice_date}</td>
+     <td class="n">${p.outstanding.toFixed(2)}</td><td class="n"><b>${p.amount.toFixed(2)}</b></td></tr>`).join('')
+    : '<tr><td colspan="4" class="empty">لا توجد فواتير مستحقة على هذا العميل.</td></tr>';
+  document.getElementById('rest').innerHTML = d.unallocated>0
+    ? `<span class="tag t-warn">سيتبقى ${d.unallocated.toFixed(2)} كرصيد دائن</span>` : '';
+}
+document.querySelector('[name=amount]').addEventListener('input', preview);
+preview();
+{% else %}
+function preview(){}
+{% endif %}
+</script>
+{% endblock %}

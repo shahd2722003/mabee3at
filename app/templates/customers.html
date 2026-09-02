@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}العملاء{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>العملاء</h1><p>الخصم ومدة السداد الافتراضية تُسحب تلقائياً عند إنشاء الفاتورة</p></div>
+{% if user.role != 'rep' %}<a class="btn" href="{{ url_for('customer_form') }}">إضافة عميل</a>{% endif %}</div>
+
+{{ filter_bar(f, ['q','rep_id','method','disc_min'], reps=reps, search_hint='اسم أو كود أو هاتف العميل') }}
+
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الكود</th><th>الاسم</th><th>المندوب</th><th class="n">خصم</th><th class="n">سداد</th>
+<th class="n">سماحية</th><th>وسيلة الدفع</th><th class="n">الرصيد</th><th class="n">شيكات معلّقة</th><th></th></tr></thead>
+<tbody>{% for r in rows %}<tr>
+  <td class="ref">{{ r.code }}</td><td>{{ r.name }}</td><td>{{ r.rep_name or '—' }}</td>
+  <td class="n">{{ r.default_discount_pct }}%</td><td class="n">{{ r.default_credit_days }} يوم</td>
+  <td class="n">{{ (r.grace_days ~ ' يوم') if r.grace_days is not none else 'افتراضي' }}</td>
+  <td>{{ METHODS[r.default_payment_method] }}</td>
+  <td class="n"><span class="tag {{ 't-bad' if r.balance > 0 else 't-ok' }}">{{ fmt(r.balance) }}</span></td>
+  <td class="n">{{ fmt(r.pending_cheques) }}</td>
+  <td class="no-print"><a class="small" href="{{ url_for('rep_statement', apply=1, customer_id=r.id) }}">كشف حساب</a>
+  {% if user.role != 'rep' %} · <a class="small" href="{{ url_for('customer_form', cid=r.id) }}">تعديل</a>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="10" class="empty">لا يوجد عملاء يطابقون الفلتر.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

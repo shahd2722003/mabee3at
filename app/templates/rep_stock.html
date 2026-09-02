@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}المخزون وحركة صنف{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>المخزون وحركة صنف</h1><p>الرصيد الجاري بعد كل حركة</p></div>
+<button class="btn ghost no-print" onclick="print()">طباعة</button></div>
+
+{{ filter_bar(f, ['item_id','date_from'], items=items) }}
+
+{% if item_id %}
+<div class="card"><h3>كارت الصنف</h3><div class="tbl-wrap"><table>
+<thead><tr><th>التاريخ</th><th>نوع الحركة</th><th>المستند</th><th class="n">وارد</th><th class="n">منصرف</th>
+<th class="n">الرصيد</th><th class="n">التكلفة</th><th class="n">سعر البيع</th></tr></thead>
+<tbody>{% for m in moves %}<tr><td class="n">{{ m.move_date }}</td><td>{{ MOVE_TYPES[m.move_type] }}</td>
+<td class="ref">{{ m.ref_no or '—' }}</td>
+<td class="n">{{ '%g'|format(m.qty) if m.qty > 0 else '' }}</td>
+<td class="n">{{ '%g'|format(-m.qty) if m.qty < 0 else '' }}</td>
+<td class="n"><b>{{ '%g'|format(m.balance) }}</b></td>
+<td class="n">{{ fmt(m.unit_cost) }}</td><td class="n">{{ fmt(m.unit_price) }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">لا حركات على هذا الصنف في الفترة المحددة.</td></tr>{% endfor %}</tbody></table></div></div>
+{% else %}
+<div class="card"><h3>أرصدة كل الأصناف</h3><div class="tbl-wrap"><table>
+<thead><tr><th>الكود</th><th>الصنف</th><th>اللون</th><th>المقاس</th><th class="n">المتاح</th>
+<th class="n">التكلفة</th><th class="n">قيمة المخزون</th></tr></thead>
+<tbody>{% for s in stocks %}<tr><td class="ref">{{ s.code }}</td><td>{{ s.name }}</td><td>{{ s.color or '—' }}</td>
+<td>{{ s.size or '—' }}</td><td class="n">{{ '%g'|format(s.qty_available) }}</td>
+<td class="n">{{ fmt(s.cost_price) }}</td><td class="n">{{ fmt(s.qty_available * s.cost_price) }}</td></tr>{% endfor %}</tbody>
+<tfoot><tr><td colspan="6">قيمة المخزون بالتكلفة</td><td class="n">{{ fmt(total_value) }}</td></tr></tfoot>
+</table></div></div>
+{% endif %}
+{% endblock %}

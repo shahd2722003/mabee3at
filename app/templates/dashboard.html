@@ -1,0 +1,63 @@
+{% extends "base.html" %}{% block title %}لوحة التحكم{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>لوحة التحكم</h1><p>ملخص الحركة والتنبيهات المستحقة اليوم</p></div>
+  <div class="row-actions no-print">
+    <a class="btn" href="{{ url_for('invoice_new') }}">فاتورة جديدة</a>
+    <a class="btn ghost" href="{{ url_for('collection_new') }}">تسجيل دفعة</a>
+    <a class="btn ghost" href="{{ url_for('quick') }}">إدخال سريع</a>
+    {% if user.role=='admin' %}<form method="post" action="{{ url_for('jobs_run') }}" style="display:inline">
+      <button class="btn ghost">الفحص اليومي</button></form>{% endif %}
+  </div>
+</div>
+
+<div class="grid g4" style="margin-bottom:18px">
+  <div class="kpi"><span>إجمالي المبيعات</span><b>{{ fmt(kpi.sales) }}</b>
+    {% if kpi.aggregate %}<span class="small muted">منها {{ fmt(kpi.aggregate) }} فواتير إجمالية</span>{% endif %}</div>
+  <div class="kpi teal"><span>المحصَّل</span><b>{{ fmt(kpi.collected) }}</b></div>
+  <div class="kpi clay"><span>الرصيد المستحق</span><b>{{ fmt(kpi.outstanding) }}</b></div>
+  <div class="kpi brass"><span>عمولات وبونص مستحقة</span><b>{{ fmt(comm.c + comm.b) }}</b></div>
+</div>
+
+{% if late_n %}
+<div class="flash error no-print" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span>{{ late_n }} فاتورة تجاوزت مدة السداد والسماحية برصيد غير محصَّل قدره {{ fmt(late_amt) }}
+    — سيُنشأ لها قيد عكس عمولة وبونص في الفحص اليومي.</span>
+  <a class="btn ghost sm" href="{{ url_for('rep_late') }}" style="margin-inline-start:auto">عرض التفاصيل</a>
+</div>
+{% endif %}
+
+<div class="grid g2">
+  <div class="card"><h3>فواتير متأخرة عن الاستحقاق</h3>
+    <div class="tbl-wrap">{% if overdue %}<table>
+      <thead><tr><th>الفاتورة</th><th>العميل</th><th>الاستحقاق</th><th class="n">التأخير</th><th class="n">المتبقي</th></tr></thead>
+      <tbody>{% for r in overdue %}<tr>
+        <td><a class="ref" href="{{ url_for('invoice_view', iid=r.id) }}">{{ r.ref_no }}</a></td>
+        <td>{{ r.cust }}</td><td class="n">{{ r.due_date }}</td>
+        <td class="n"><span class="tag t-bad">{{ r.late_days }} يوم</span></td>
+        <td class="n">{{ fmt(r.outstanding) }}</td></tr>{% endfor %}</tbody></table>
+      {% else %}<div class="empty">لا توجد فواتير متأخرة.</div>{% endif %}</div>
+  </div>
+
+  <div class="card"><h3>شيكات معلّقة (تُحصَّل تلقائياً في الاستحقاق)</h3>
+    <div class="tbl-wrap">{% if cheques %}<table>
+      <thead><tr><th>الشيك</th><th>العميل</th><th>الاستحقاق</th><th class="n">المتبقي</th><th class="n">القيمة</th></tr></thead>
+      <tbody>{% for c in cheques %}<tr>
+        <td class="ref">{{ c.cheque_number or c.ref_no }}</td><td>{{ c.cust }}</td>
+        <td class="n">{{ c.due_date }}</td>
+        <td class="n">{% if c.days_left < 0 %}<span class="tag t-bad">متأخر {{ -c.days_left }} يوم</span>
+          {% elif c.days_left <= 7 %}<span class="tag t-warn">{{ c.days_left }} يوم</span>
+          {% else %}<span class="tag t-neu">{{ c.days_left }} يوم</span>{% endif %}</td>
+        <td class="n">{{ fmt(c.amount) }}</td></tr>{% endfor %}</tbody></table>
+      {% else %}<div class="empty">لا توجد شيكات معلّقة.</div>{% endif %}</div>
+  </div>
+</div>
+
+<div class="card"><h3>أصناف نفد رصيدها</h3>
+  <div class="tbl-wrap">{% if low %}<table>
+    <thead><tr><th>الكود</th><th>الصنف</th><th>اللون</th><th>المقاس</th><th class="n">المتاح</th></tr></thead>
+    <tbody>{% for i in low %}<tr><td class="ref">{{ i.code }}</td><td>{{ i.name }}</td>
+      <td>{{ i.color or '—' }}</td><td>{{ i.size or '—' }}</td>
+      <td class="n"><span class="tag t-bad">{{ '%g'|format(i.qty_available) }}</span></td></tr>{% endfor %}</tbody></table>
+    {% else %}<div class="empty">كل الأصناف عليها رصيد.</div>{% endif %}</div>
+</div>
+{% endblock %}

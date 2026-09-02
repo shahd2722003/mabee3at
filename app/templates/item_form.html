@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}صنف{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>{{ 'تعديل صنف' if item else 'إضافة صنف' }}</h1></div></div>
+<div class="card" style="max-width:640px"><div class="body"><form method="post">
+  <div class="grid g2">
+    <div class="field"><label>كود الصنف</label><input name="code" required value="{{ item.code if item }}"></div>
+    <div class="field"><label>الاسم</label><input name="name" required value="{{ item.name if item }}"></div>
+    <div class="field"><label>اللون</label><input name="color" value="{{ item.color if item else '' }}"></div>
+    <div class="field"><label>المقاس</label><input name="size" value="{{ item.size if item else '' }}"></div>
+    <div class="field"><label>سعر البيع</label><input type="number" step="0.01" name="sale_price" value="{{ item.sale_price if item else 0 }}"></div>
+    <div class="field"><label>سعر التكلفة</label><input type="number" step="0.01" name="cost_price" value="{{ item.cost_price if item else 0 }}"></div>
+  </div>
+  <p class="small muted">الكمية المتاحة تُحسب من حركات المخزون، وتُسجَّل من صفحة «حركة المخزون».</p>
+  <div class="row-actions"><button class="btn">حفظ الصنف</button><a class="btn ghost" href="{{ url_for('items') }}">إلغاء</a></div>
+</form></div></div>
+{% endblock %}

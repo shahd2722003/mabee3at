@@ -1,0 +1,99 @@
+{# شريط فلاتر موحّد. يمرَّر له اسم الصفحة وقائمة الحقول المطلوبة فقط. #}
+{% macro filter_bar(f, fields, customers=[], reps=[], items=[], statuses=[], kinds=[], search_hint='بحث بالاسم أو الكود أو الرقم المرجعي') %}
+<div class="card no-print filters-card">
+  <form class="filters" method="get">
+    <input type="hidden" name="apply" value="1">
+
+    {% if 'q' in fields %}
+    <div class="field grow"><label>بحث</label>
+      <input name="q" value="{{ f.q }}" placeholder="{{ search_hint }}"></div>
+    {% endif %}
+
+    {% if 'customer_id' in fields %}
+    <div class="field"><label>العميل</label><select name="customer_id">
+      <option value="">الكل</option>
+      {% for c in customers %}<option value="{{ c.id }}" {{ 'selected' if f.customer_id == c.id|string }}>{{ c.code }} · {{ c.name }}</option>{% endfor %}
+    </select></div>
+    {% endif %}
+
+    {% if 'rep_id' in fields %}
+    <div class="field"><label>المندوب</label><select name="rep_id">
+      <option value="">الكل</option>
+      {% for r in reps %}<option value="{{ r.id }}" {{ 'selected' if f.rep_id == r.id|string }}>{{ r.name }}</option>{% endfor %}
+    </select></div>
+    {% endif %}
+
+    {% if 'item_id' in fields %}
+    <div class="field"><label>الصنف</label><select name="item_id">
+      <option value="">الكل</option>
+      {% for i in items %}<option value="{{ i.item_id if i.item_id is defined else i.id }}" {{ 'selected' if f.item_id == (i.item_id if i.item_id is defined else i.id)|string }}>{{ i.code }} · {{ i.name }}</option>{% endfor %}
+    </select></div>
+    {% endif %}
+
+    {% if 'date_from' in fields %}
+    <div class="field"><label>من تاريخ</label><input type="date" name="date_from" value="{{ f.date_from }}"></div>
+    <div class="field"><label>إلى تاريخ</label><input type="date" name="date_to" value="{{ f.date_to }}"></div>
+    {% endif %}
+
+    {% if 'due_from' in fields %}
+    <div class="field"><label>استحقاق من</label><input type="date" name="due_from" value="{{ f.due_from }}"></div>
+    <div class="field"><label>استحقاق إلى</label><input type="date" name="due_to" value="{{ f.due_to }}"></div>
+    {% endif %}
+
+    {% if 'method' in fields %}
+    <div class="field"><label>طريقة الدفع</label><select name="method">
+      <option value="">الكل</option>
+      {% for k, v in METHODS.items() %}<option value="{{ k }}" {{ 'selected' if f.method == k }}>{{ v }}</option>{% endfor %}
+    </select></div>
+    {% endif %}
+
+    {% if 'kind' in fields %}
+    <div class="field"><label>نوع الفاتورة</label><select name="kind">
+      <option value="">الكل</option>
+      <option value="detailed" {{ 'selected' if f.kind == 'detailed' }}>تفصيلية بأصناف</option>
+      <option value="aggregate" {{ 'selected' if f.kind == 'aggregate' }}>تاريخية إجمالية</option>
+    </select></div>
+    {% endif %}
+
+    {% if 'status' in fields %}
+    <div class="field"><label>الحالة</label><select name="status">
+      <option value="">الكل</option>
+      {% for k, v in statuses %}<option value="{{ k }}" {{ 'selected' if f.status == k }}>{{ v }}</option>{% endfor %}
+    </select></div>
+    {% endif %}
+
+    {% if 'move_type' in fields %}
+    <div class="field"><label>نوع الحركة</label><select name="move_type">
+      <option value="">الكل</option>
+      {% for k, v in MOVE_TYPES.items() %}<option value="{{ k }}" {{ 'selected' if f.move_type == k }}>{{ v }}</option>{% endfor %}
+    </select></div>
+    {% endif %}
+
+    {% if 'entry_type' in fields %}
+    <div class="field"><label>نوع القيد</label><select name="entry_type">
+      <option value="">الكل</option>
+      <option value="earn" {{ 'selected' if f.entry_type == 'earn' }}>استحقاق</option>
+      <option value="reversal" {{ 'selected' if f.entry_type == 'reversal' }}>عكس (مرتجع / شيك مرتد)</option>
+      <option value="late_reversal" {{ 'selected' if f.entry_type == 'late_reversal' }}>عكس تأخر التحصيل</option>
+      <option value="accrued" {{ 'selected' if f.entry_type == 'accrued' }}>معلّقة (شيك لم يستحق)</option>
+    </select></div>
+    {% endif %}
+
+    {% if 'disc_min' in fields %}
+    <div class="field sm"><label>خصم من %</label><input type="number" step="0.01" name="disc_min" value="{{ f.disc_min }}"></div>
+    <div class="field sm"><label>إلى %</label><input type="number" step="0.01" name="disc_max" value="{{ f.disc_max }}"></div>
+    {% endif %}
+
+    {% if 'days_min' in fields %}
+    <div class="field sm"><label>مدة التحصيل من</label><input type="number" name="days_min" value="{{ f.days_min }}"></div>
+    <div class="field sm"><label>إلى (يوم)</label><input type="number" name="days_max" value="{{ f.days_max }}"></div>
+    {% endif %}
+
+    <div class="field actions">
+      <button class="btn">تطبيق الفلتر</button>
+      <a class="btn ghost" href="?clear=1">مسح الفلاتر</a>
+      <button class="btn ghost" name="export" value="csv">تصدير النتائج</button>
+    </div>
+  </form>
+</div>
+{% endmacro %}

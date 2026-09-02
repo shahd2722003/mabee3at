@@ -1,0 +1,31 @@
+# مخطّط نشر Mabee3at على Render — الطبقة المجانية بالكامل.
+# لا يحتوي أي سر: كل القيم الحسّاسة تُولَّد أو تُربط من الخدمات.
+services:
+  - type: web
+    name: mabee3at-staging
+    runtime: python
+    plan: free                      # لا خطة مدفوعة
+    region: frankfurt               # الأقرب لمصر
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app/wsgi.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.14"            # نفس إصدار بيئة التشغيل المضمّنة
+      - key: MABEE3AT_DB_URL
+        fromDatabase:
+          name: mabee3at-staging-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true         # يولّده Render ولا يظهر في المستودع
+      - key: MABEE3AT_ENV
+        value: cloud                # يفعّل كوكيز HTTPS وإخفاء الأخطاء
+      - key: MABEE3AT_POOL_MAX
+        value: "5"                  # قاعدة الطبقة المجانية محدودة الاتصالات
+
+databases:
+  - name: mabee3at-staging-db
+    plan: free                      # ينتهي بعد 30 يوماً — انظر README_DEPLOY.md
+    region: frankfurt
+    databaseName: mabee3at
+    user: mabee3at

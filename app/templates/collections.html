@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}التحصيلات{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>الدفعات والتحصيلات</h1>
+<p>كل دفعة تُسجَّل منفصلة بوسيلتها وقيمتها وتاريخها، وتُوزَّع على أقدم الفواتير (FIFO)</p></div>
+<div class="row-actions no-print"><a class="btn" href="{{ url_for('collection_new') }}">تسجيل دفعة</a>
+<a class="btn ghost" href="{{ url_for('quick', mode='collection') }}">إدخال سريع متتابع</a></div></div>
+
+{{ filter_bar(f, ['q','customer_id','rep_id','date_from','method','status'],
+              customers=customers, reps=reps, statuses=statuses,
+              search_hint='رقم الدفعة أو الشيك أو اسم العميل') }}
+
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الرقم</th><th>التاريخ</th><th>العميل</th><th>المندوب</th><th>الوسيلة</th>
+<th class="n">القيمة</th><th class="n">المخصَّص</th><th>استحقاق الشيك</th><th>الحالة</th><th class="no-print"></th></tr></thead>
+<tbody>{% for r in rows %}<tr><td class="ref">{{ r.ref_no }}</td><td class="n">{{ r.collection_date }}</td>
+<td>{{ r.cust }}</td><td>{{ r.rep }}</td>
+<td>{{ METHODS[r.method] }}{% if r.cheque_number %} <span class="ref">#{{ r.cheque_number }}</span>{% endif %}</td>
+<td class="n">{{ fmt(r.amount) }}</td><td class="n">{{ fmt(r.allocated_total) }}</td>
+<td class="n">{{ r.cheque_due or '—' }}</td>
+<td>{% if r.status=='void' %}<span class="tag t-bad">ملغاة (شيك مرتد)</span>
+{% elif r.cheque_status=='pending' %}<span class="tag t-warn">شيك معلّق</span>
+{% elif r.cheque_status=='cleared' %}<span class="tag t-ok">شيك محصَّل</span>
+{% else %}<span class="tag t-ok">مرحَّلة</span>{% endif %}</td>
+<td class="no-print"><a class="small" href="{{ url_for('rep_payments', apply=1, q=r.ref_no) }}">التخصيص</a></td></tr>
+{% else %}<tr><td colspan="10" class="empty">لا توجد دفعات تطابق الفلتر.</td></tr>{% endfor %}</tbody>
+<tfoot><tr><td colspan="5">{{ rows|length }} دفعة</td><td class="n">{{ fmt(totals.amount) }}</td>
+<td class="n">{{ fmt(totals.allocated) }}</td><td colspan="3"></td></tr></tfoot>
+</table></div></div>
+{% endblock %}

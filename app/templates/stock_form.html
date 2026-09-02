@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% block title %}حركة مخزون{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>تسجيل حركة مخزون</h1>
+<p>استخدم «رصيد افتتاحي» بعد إدخال الفواتير والمرتجعات التاريخية. التاريخ المدخل هو تاريخ الحركة الفعلي.</p></div></div>
+<form method="post">
+<div class="card"><div class="body"><div class="grid g3">
+  <div class="field"><label>نوع الحركة</label><select name="move_type">
+    <option value="opening">رصيد افتتاحي</option><option value="purchase">إضافة / شراء</option>
+    <option value="adjustment">تسوية (يمكن أن تكون بالسالب)</option></select></div>
+  <div class="field"><label>تاريخ الحركة</label><input type="date" name="move_date" value="{{ today }}" required></div>
+  <div class="field"><label>ملاحظات</label><input name="notes"></div>
+</div></div></div>
+<div class="card"><h3>البنود</h3><div class="tbl-wrap"><table id="lines">
+<thead><tr><th style="width:45%">الصنف</th><th class="n">الرصيد الحالي</th><th class="n" style="width:110px">الكمية</th>
+<th class="n" style="width:120px">التكلفة</th><th class="n" style="width:120px">سعر البيع</th><th></th></tr></thead><tbody></tbody></table></div>
+<div class="body"><button type="button" class="btn ghost sm" onclick="addRow()">+ بند</button></div></div>
+<div class="row-actions"><button class="btn">حفظ الحركات</button><a class="btn ghost" href="{{ url_for('stock') }}">إلغاء</a></div>
+</form>
+<script>
+const ITEMS={{ items|map(attribute='item_id')|list|tojson }}.map((id,i)=>({id,
+  code:{{ items|map(attribute='code')|list|tojson }}[i], name:{{ items|map(attribute='name')|list|tojson }}[i],
+  color:{{ items|map(attribute='color')|list|tojson }}[i], size:{{ items|map(attribute='size')|list|tojson }}[i],
+  cost:{{ items|map(attribute='cost_price')|list|tojson }}[i], price:{{ items|map(attribute='sale_price')|list|tojson }}[i],
+  qty:{{ items|map(attribute='qty_available')|list|tojson }}[i]}));
+function addRow(){
+  const tb=document.querySelector('#lines tbody'), tr=document.createElement('tr');
+  tr.innerHTML=`<td><select name="item_id" onchange="pick(this)"><option value="">— اختر —</option>`+
+   ITEMS.map(i=>`<option value="${i.id}" data-c="${i.cost}" data-p="${i.price}" data-q="${i.qty}">${i.code} · ${i.name}${i.color?' · '+i.color:''}${i.size?' · '+i.size:''}</option>`).join('')+
+   `</select></td><td class="n avail muted">—</td>
+    <td><input type="number" step="0.01" name="qty" value="0"></td>
+    <td><input type="number" step="0.01" name="unit_cost" value="0"></td>
+    <td><input type="number" step="0.01" name="unit_price" value="0"></td>
+    <td><button type="button" class="btn-link" onclick="this.closest('tr').remove()">حذف</button></td>`;
+  tb.appendChild(tr);
+}
+function pick(s){const o=s.selectedOptions[0],tr=s.closest('tr');
+  tr.querySelector('[name=unit_cost]').value=o.dataset.c||0;
+  tr.querySelector('[name=unit_price]').value=o.dataset.p||0;
+  tr.querySelector('.avail').textContent=o.dataset.q??'—';}
+addRow();
+</script>
+{% endblock %}

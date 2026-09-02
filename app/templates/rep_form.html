@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}مندوب{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>{{ 'تعديل مندوب' if rep else 'إضافة مندوب' }}</h1></div></div>
+<div class="card" style="max-width:600px"><div class="body"><form method="post">
+  <div class="grid g2">
+    <div class="field"><label>الكود</label><input name="code" required value="{{ rep.code if rep }}"></div>
+    <div class="field"><label>الاسم</label><input name="name" required value="{{ rep.name if rep }}"></div>
+    <div class="field"><label>الهاتف</label><input name="phone" value="{{ rep.phone if rep else '' }}"></div>
+    <div class="field"><label>تاريخ التعيين</label><input type="date" name="hire_date" value="{{ rep.hire_date if rep else '' }}"></div>
+  </div>
+  <div class="row-actions"><button class="btn">حفظ</button><a class="btn ghost" href="{{ url_for('reps_list') }}">إلغاء</a></div>
+</form></div></div>
+{% endblock %}

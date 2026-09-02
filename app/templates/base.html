@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}نظام المبيعات{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="shell">
+  <aside class="side no-print">
+    <div class="brand"><b>إدارة المبيعات</b><span>مبيعات · مخزون · تحصيل · عمولات</span></div>
+    <nav class="nav">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint=='dashboard' }}">لوحة التحكم</a>
+      <a href="{{ url_for('quick') }}" class="{{ 'on' if request.endpoint=='quick' }}">الإدخال السريع</a>
+      <h6>العمليات</h6>
+      <a href="{{ url_for('invoices') }}" class="{{ 'on' if request.endpoint in ('invoices','invoice_new','invoice_view') }}">الفواتير</a>
+      <a href="{{ url_for('returns') }}" class="{{ 'on' if request.endpoint in ('returns','return_new') }}">المرتجعات</a>
+      <a href="{{ url_for('collections') }}" class="{{ 'on' if request.endpoint in ('collections','collection_new') }}">التحصيلات</a>
+      <a href="{{ url_for('cheques') }}" class="{{ 'on' if request.endpoint=='cheques' }}">الشيكات</a>
+      <a href="{{ url_for('stock') }}" class="{{ 'on' if request.endpoint in ('stock','stock_new') }}">حركة المخزون</a>
+      <h6>البيانات الأساسية</h6>
+      <a href="{{ url_for('items') }}" class="{{ 'on' if request.endpoint in ('items','item_form') }}">الأصناف</a>
+      <a href="{{ url_for('customers') }}" class="{{ 'on' if request.endpoint in ('customers','customer_form') }}">العملاء</a>
+      {% if user.role != 'rep' %}<a href="{{ url_for('reps_list') }}" class="{{ 'on' if request.endpoint in ('reps_list','rep_form') }}">المندوبون</a>{% endif %}
+      <h6>التقارير</h6>
+      <a href="{{ url_for('rep_sales') }}" class="{{ 'on' if request.endpoint=='rep_sales' }}">تقرير المبيعات</a>
+      <a href="{{ url_for('rep_statement') }}" class="{{ 'on' if request.endpoint=='rep_statement' }}">كشف حساب عميل</a>
+      <a href="{{ url_for('rep_aging') }}" class="{{ 'on' if request.endpoint=='rep_aging' }}">أعمار الديون</a>
+      <a href="{{ url_for('rep_payments') }}" class="{{ 'on' if request.endpoint=='rep_payments' }}">الدفعات وتخصيصها</a>
+      <a href="{{ url_for('rep_commissions') }}" class="{{ 'on' if request.endpoint=='rep_commissions' }}">العمولات والبونص</a>
+      <a href="{{ url_for('rep_late') }}" class="{{ 'on' if request.endpoint=='rep_late' }}">المتأخرات وعكس العمولة</a>
+      <a href="{{ url_for('rep_stock') }}" class="{{ 'on' if request.endpoint=='rep_stock' }}">المخزون وحركة صنف</a>
+      {% if user.role == 'admin' %}
+      <h6>الإدارة</h6>
+      <a href="{{ url_for('settings_page') }}" class="{{ 'on' if request.endpoint=='settings_page' }}">قواعد العمولة والبونص</a>
+      <a href="{{ url_for('audit_page') }}" class="{{ 'on' if request.endpoint=='audit_page' }}">سجل التدقيق</a>
+      {% endif %}
+    </nav>
+    <div class="who">
+      <b>{{ user.full_name }}</b>
+      <span class="muted">{{ ROLE_NAMES[user.role] }}</span> ·
+      <a href="{{ url_for('logout') }}">خروج</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

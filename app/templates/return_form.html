@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% block title %}مرتجع جديد{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>مرتجع جديد</h1><p>اختر الفاتورة ثم حدد الكميات المرتجعة — يُطبَّق نفس خصم الفاتورة الأصلية</p></div></div>
+<form method="post">
+<div class="card"><div class="body"><div class="grid g3">
+  <div class="field"><label>الفاتورة الأصلية</label><select name="invoice_id" id="inv" required>
+    <option value="">— اختر —</option>
+    {% for i in invs %}<option value="{{ i.id }}">{{ i.ref_no }} · {{ i.cust }} · {{ i.invoice_date }}</option>{% endfor %}</select></div>
+  <div class="field"><label>تاريخ المرتجع</label><input type="date" name="return_date" value="{{ today }}" required></div>
+  <div class="field"><label>ملاحظات</label><input name="notes"></div>
+</div></div></div>
+<div class="card"><h3>بنود الفاتورة</h3><div class="tbl-wrap"><table id="lines">
+<thead><tr><th>الصنف</th><th class="n">مُباع</th><th class="n">مرتجع سابقاً</th><th class="n">المتاح للارتجاع</th>
+<th class="n" style="width:120px">كمية المرتجع</th><th class="n">السعر</th></tr></thead>
+<tbody><tr><td colspan="6" class="empty">اختر فاتورة أولاً.</td></tr></tbody></table></div></div>
+<div class="row-actions"><button class="btn">ترحيل المرتجع</button><a class="btn ghost" href="{{ url_for('returns') }}">إلغاء</a></div>
+</form>
+<script>
+document.getElementById('inv').addEventListener('change', async e=>{
+  const tb=document.querySelector('#lines tbody'); tb.innerHTML='';
+  if(!e.target.value) return;
+  const r=await fetch(`/api/invoice/${e.target.value}/lines`); const data=await r.json();
+  data.lines.forEach(l=>{
+    const avail=(l.qty-l.returned);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input type="hidden" name="item_id" value="${l.item_id}">
+      <span class="ref">${l.code}</span> · ${l.name}${l.color?' · '+l.color:''}${l.size?' · '+l.size:''}</td>
+      <td class="n">${l.qty}</td><td class="n">${l.returned}</td><td class="n">${avail}</td>
+      <td><input type="number" step="0.01" min="0" max="${avail}" name="qty" value="0"></td>
+      <td class="n">${l.unit_price.toFixed(2)}</td>`;
+    tb.appendChild(tr);
+  });
+});
+</script>
+{% endblock %}

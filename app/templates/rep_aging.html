@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}أعمار الديون{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>أعمار الديون</h1><p>الأرصدة المستحقة موزعة حسب التأخير عن تاريخ الاستحقاق</p></div>
+<button class="btn ghost no-print" onclick="print()">طباعة</button></div>
+
+{{ filter_bar(f, ['q','customer_id','rep_id','due_from','kind'], customers=customers, reps=reps,
+              search_hint='رقم الفاتورة أو اسم العميل') }}
+
+<div class="grid g5" style="margin-bottom:18px">
+{% for k, v in buckets.items() %}
+<div class="kpi {{ 'clay' if k == 'أكثر من 90' else ('brass' if k != 'غير مستحق' else 'teal') }}">
+  <span>{{ k }}{{ ' يوم' if k != 'غير مستحق' }}</span><b>{{ fmt(v) }}</b></div>{% endfor %}
+</div>
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الفاتورة</th><th>النوع</th><th>التاريخ</th><th>الاستحقاق</th><th>العميل</th><th>المندوب</th>
+<th class="n">التأخير</th><th class="n">المستحق</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td class="ref">{{ r.ref_no }}</td>
+<td>{% if r.invoice_kind=='aggregate' %}<span class="tag kind-agg">إجمالية</span>
+    {% else %}<span class="tag kind-det">تفصيلية</span>{% endif %}</td>
+<td class="n">{{ r.invoice_date }}</td>
+<td class="n">{{ r.due_date }}</td><td>{{ r.cust }}</td><td>{{ r.rep }}</td>
+<td class="n">{% if r.late > 0 %}<span class="tag {{ 't-bad' if r.late > 30 else 't-warn' }}">{{ r.late }} يوم</span>
+{% else %}<span class="tag t-ok">لم يستحق</span>{% endif %}</td>
+<td class="n">{{ fmt(r.outstanding) }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">لا توجد أرصدة مستحقة تطابق الفلتر.</td></tr>{% endfor %}</tbody>
+<tfoot><tr><td colspan="7">الإجمالي</td><td class="n">{{ fmt(rows|sum(attribute='outstanding') or 0) }}</td></tr></tfoot>
+</table></div></div>
+{% endblock %}

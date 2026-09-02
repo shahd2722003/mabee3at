@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}الدفعات وتخصيصها{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>الدفعات وتخصيصها على الفواتير</h1>
+<p>كل سطر يوضّح الجزء الذي سدّدته الدفعة من فاتورة بعينها، والعمولة والبونص المحسوبين على هذا الجزء</p></div>
+<button class="btn ghost no-print" onclick="print()">طباعة</button></div>
+
+{{ filter_bar(f, ['q','customer_id','rep_id','date_from','method','kind','days_min'],
+              customers=customers, reps=reps, search_hint='رقم الدفعة أو الفاتورة أو الشيك') }}
+
+<div class="grid g2" style="margin-bottom:16px">
+  <div class="kpi teal"><span>إجمالي المخصَّص</span><b>{{ fmt(totals.allocated) }}</b></div>
+  <div class="kpi brass"><span>عمولة وبونص على هذه الدفعات</span><b>{{ fmt(totals.comm) }}</b></div>
+</div>
+
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>تاريخ الدفعة</th><th>الدفعة</th><th>الوسيلة</th><th class="n">قيمة الدفعة</th>
+<th>العميل</th><th>الفاتورة</th><th class="n">قيمة الفاتورة</th><th class="n">الجزء المسدَّد</th>
+<th class="n">المتبقي عليها</th><th class="n">المدة</th><th class="n">عمولة + بونص</th></tr></thead>
+<tbody>{% for r in rows %}<tr>
+<td class="n">{{ r.collection_date }}</td>
+<td class="ref">{{ r.coll_ref }}</td>
+<td>{{ METHODS[r.method] }}{% if r.cheque_number %}<br><span class="small muted">#{{ r.cheque_number }} · استحقاق {{ r.chq_due }}</span>{% endif %}</td>
+<td class="n">{{ fmt(r.payment_total) }}</td>
+<td>{{ r.cust }}</td>
+<td class="ref">{{ r.inv_ref }}
+  {% if r.invoice_kind=='aggregate' %}<br><span class="tag kind-agg">إجمالية</span>{% endif %}</td>
+<td class="n">{{ fmt(r.inv_total) }}</td>
+<td class="n"><b>{{ fmt(r.amount) }}</b></td>
+<td class="n">{{ fmt(r.inv_outstanding) }}</td>
+<td class="n">{{ r.days_taken }} يوم</td>
+<td class="n">{% if r.commission_amt is not none %}{{ fmt(r.commission_amt + r.bonus_amt) }}
+    {% if r.comm_status=='accrued' %}<br><span class="tag t-warn">معلّقة</span>{% endif %}
+  {% elif r.chq_status=='pending' %}<span class="tag t-warn">شيك معلّق</span>
+  {% else %}—{% endif %}</td></tr>
+{% else %}<tr><td colspan="11" class="empty">لا توجد دفعات تطابق الفلتر.</td></tr>{% endfor %}</tbody>
+<tfoot><tr><td colspan="7">{{ rows|length }} تخصيص</td><td class="n">{{ fmt(totals.allocated) }}</td>
+<td colspan="2"></td><td class="n">{{ fmt(totals.comm) }}</td></tr></tfoot>
+</table></div></div>
+{% endblock %}

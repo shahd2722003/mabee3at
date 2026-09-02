@@ -1,0 +1,69 @@
+{% extends "base.html" %}{% block title %}قواعد العمولة والبونص{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>قواعد العمولة والبونص</h1>
+<p>التعديل هنا يسري على الفواتير الجديدة فقط — كل فاتورة تحتفظ بالقواعد المطبقة وقت إنشائها</p></div></div>
+<form method="post">
+<div class="card"><h3>عمولة المندوب حسب نسبة خصم الفاتورة</h3><div class="tbl-wrap"><table id="cr">
+<thead><tr><th>الوصف</th><th class="n" style="width:130px">من خصم %</th><th class="n" style="width:130px">إلى خصم %</th>
+<th class="n" style="width:130px">العمولة %</th><th></th></tr></thead>
+<tbody>{% for r in rules %}<tr>
+<td><input name="cr_label" value="{{ r.label }}"></td>
+<td><input type="number" step="0.001" name="cr_min" value="{{ r.min_discount }}"></td>
+<td><input type="number" step="0.001" name="cr_max" value="{{ r.max_discount }}"></td>
+<td><input type="number" step="0.01" name="cr_pct" value="{{ r.commission_pct }}"></td>
+<td><button type="button" class="btn-link" onclick="this.closest('tr').remove()">حذف</button></td></tr>{% endfor %}</tbody></table></div>
+<div class="body"><button type="button" class="btn ghost sm" onclick="addR('cr')">+ قاعدة</button></div></div>
+
+<div class="card"><h3>شرائح البونص حسب مدة التحصيل</h3><div class="tbl-wrap"><table id="bt">
+<thead><tr><th>الوصف</th><th class="n" style="width:170px">حتى عدد أيام</th><th class="n" style="width:130px">البونص %</th><th></th></tr></thead>
+<tbody>{% for t in tiers %}<tr>
+<td><input name="bt_label" value="{{ t.label }}"></td>
+<td><input type="number" name="bt_days" value="{{ t.up_to_days }}"></td>
+<td><input type="number" step="0.01" name="bt_pct" value="{{ t.bonus_pct }}"></td>
+<td><button type="button" class="btn-link" onclick="this.closest('tr').remove()">حذف</button></td></tr>{% endfor %}</tbody></table></div>
+<div class="body"><button type="button" class="btn ghost sm" onclick="addR('bt')">+ شريحة</button>
+<p class="small muted">تُطبَّق أول شريحة يقل عدد الأيام عن حدّها أو يساويه، لذا رتّب الحدود تصاعدياً.</p></div></div>
+
+<div class="card"><h3>نقطة بداية احتساب المدة</h3><div class="body"><div class="grid g3">
+{% for k, lbl in [('cash','كاش'),('credit','كريدت'),('cheque','شيك'),('transfer','تحويل بنكي')] %}
+<div class="field"><label>{{ lbl }}</label><select name="basis_{{ k }}">
+  <option value="invoice_date" {{ 'selected' if basis[k]=='invoice_date' }}>من تاريخ الفاتورة</option>
+  <option value="due_date" {{ 'selected' if basis[k]=='due_date' }}>من تاريخ الاستحقاق</option>
+</select></div>{% endfor %}
+</div>
+<p class="small muted">نهاية المدة: تاريخ التحصيل للكاش والكريدت، و<b>تاريخ استحقاق الشيك</b> للشيكات — لا يتغيّر هذا لأنه قاعدة أساسية في النظام.</p>
+<label class="small" style="font-weight:400"><input type="checkbox" name="block_oversell" style="width:auto"
+  {{ 'checked' if policy.block_oversell }}> منع البيع بأكثر من الرصيد المتاح (المدير يستطيع التجاوز داخل الفاتورة)</label>
+</div></div>
+
+<div class="card"><h3>عكس العمولة والبونص عند تأخر التحصيل</h3><div class="body">
+  <label class="small" style="font-weight:400;margin-bottom:10px">
+    <input type="checkbox" name="late_enabled" style="width:auto" {{ 'checked' if late.enabled }}>
+    تفعيل القاعدة التلقائية</label>
+  <div class="grid g3">
+    <div class="field"><label>فترة السماح الافتراضية (أيام)</label>
+      <input type="number" name="grace_days" value="{{ late.grace_days }}"></div>
+    <div class="field"><label>أساس البونص في قيد العكس</label><select name="late_bonus_basis">
+      <option value="tier_at_deadline" {{ 'selected' if late.bonus_basis=='tier_at_deadline' }}>شريحة نهاية المهلة</option>
+      <option value="best_tier" {{ 'selected' if late.bonus_basis=='best_tier' }}>أعلى شريحة بونص</option>
+      <option value="none" {{ 'selected' if late.bonus_basis=='none' }}>عكس العمولة فقط بدون بونص</option>
+    </select></div>
+    <div class="field"><label>&nbsp;</label>
+      <label class="small" style="font-weight:400"><input type="checkbox" name="restore_on_collection"
+        style="width:auto" {{ 'checked' if late.restore_on_collection }}>
+        إعادة العمولة تلقائياً لو حُصّل المتأخر لاحقاً</label></div>
+  </div>
+  <p class="small muted">نهاية المهلة = تاريخ الفاتورة + مدة السداد + السماحية. مثال: مدة سداد 90 يوماً مع سماحية 15
+    يعني بدء العكس بعد 105 أيام. العكس يقع على الرصيد غير المحصَّل فقط ولا يتكرر على نفس الرصيد،
+    ويمكن ضبط سماحية مختلفة لكل عميل من صفحة العميل.</p>
+</div></div>
+
+<div class="row-actions"><button class="btn">حفظ القواعد</button></div>
+</form>
+<script>
+function addR(id){const tb=document.querySelector('#'+id+' tbody');
+  const tr=tb.rows[tb.rows.length-1].cloneNode(true);
+  tr.querySelectorAll('input').forEach(i=>{if(i.type!=='number')i.value='';});
+  tb.appendChild(tr);}
+</script>
+{% endblock %}

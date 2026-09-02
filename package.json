@@ -1,0 +1,117 @@
+{
+  "name": "mabee3at-desktop",
+  "productName": "Mabee3at",
+  "version": "2.0.0",
+  "description": "نظام إدارة المبيعات — تطبيق سطح المكتب لويندوز",
+  "main": "main.js",
+  "private": true,
+  "author": "Mabee3at",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "node test/packaging.test.js",
+    "start": "electron .",
+    "clean": "node build/clean.js",
+    "prebuild:win": "npm run test",
+    "build:win": "electron-builder --win nsis --x64",
+    "prebuild:win:portable": "npm run test",
+    "build:win:portable": "electron-builder --win portable --x64",
+    "prebuild:win:all": "npm run test",
+    "build:win:all": "electron-builder --win nsis portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.mabee3at.sales",
+    "productName": "Mabee3at",
+    "copyright": "Mabee3at",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "dist/**/*",
+      "package.json",
+      "!**/__pycache__/**",
+      "!**/*.pyc"
+    ],
+    "extraResources": [
+      {
+        "from": "app",
+        "to": "app",
+        "filter": [
+          "**/*",
+          "!__pycache__/**",
+          "!*.pyc"
+        ]
+      },
+      {
+        "from": "vendor",
+        "to": "vendor",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": [
+          "python-win-x64/**/*",
+          "README.md",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "data",
+        "to": "data",
+        "filter": [
+          "sales.db"
+        ]
+      },
+      {
+        "from": "requirements.txt",
+        "to": "requirements.txt"
+      },
+      {
+        "from": "Start-Mabee3at.bat",
+        "to": "Start-Mabee3at.bat"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "executableName": "Mabee3at",
+      "artifactName": "${productName} ${version} ${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Mabee3at",
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName} ${version} Portable.${ext}"
+    }
+  }
+}

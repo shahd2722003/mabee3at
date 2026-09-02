@@ -1,0 +1,152 @@
+:root{
+  --ink:#14202E; --paper:#EDF1F5; --surface:#fff; --line:#D8E0E8;
+  --indigo:#24486F; --indigo-2:#16324F; --indigo-soft:#E8EFF7;
+  --brass:#A9761B; --brass-soft:#FBF3E2;
+  --teal:#146B5C; --teal-soft:#E3F2EE;
+  --clay:#A63A32; --clay-soft:#FBEAE8;
+  --muted:#6B7A8C;
+  --r:8px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,sans-serif;
+  background:var(--paper); color:var(--ink); font-size:14.5px; line-height:1.6;
+}
+.num,.ref,code,input[type=number],input[type=date]{
+  font-family:"IBM Plex Mono","IBM Plex Sans Arabic",monospace; font-variant-numeric:tabular-nums;
+}
+a{color:var(--indigo);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+/* ---------- التخطيط ---------- */
+.shell{display:flex;min-height:100vh}
+.side{
+  width:236px;flex:0 0 236px;background:var(--ink);color:#C8D4E2;
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:auto;
+}
+.brand{padding:20px 18px 14px;border-bottom:1px solid #24344A}
+.brand b{display:block;color:#fff;font-size:17px;font-weight:600;letter-spacing:-.2px}
+.brand span{font-size:11.5px;color:#7D90A6;letter-spacing:.06em}
+.nav{padding:10px 0;flex:1}
+.nav h6{margin:14px 18px 6px;font-size:10.5px;color:#6D8099;letter-spacing:.14em;font-weight:600}
+.nav a{display:block;padding:7px 18px;color:#C8D4E2;font-size:14px;border-right:3px solid transparent}
+.nav a:hover{background:#1C2B3D;text-decoration:none;color:#fff}
+.nav a.on{background:#1C2B3D;color:#fff;border-right-color:var(--brass)}
+.who{padding:12px 18px;border-top:1px solid #24344A;font-size:12.5px}
+.who b{color:#fff;display:block}
+.who a{color:#8FA6BE;font-size:12px}
+.main{flex:1;min-width:0;padding:22px 26px 60px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.page-head h1{margin:0;font-size:23px;font-weight:600;letter-spacing:-.3px}
+.page-head p{margin:2px 0 0;color:var(--muted);font-size:13px}
+
+/* ---------- البطاقات ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-bottom:18px}
+.card>h3{margin:0;padding:12px 16px;border-bottom:1px solid var(--line);font-size:14.5px;font-weight:600}
+.card>.body{padding:16px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:1000px){.g3,.g4,.g5{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}.shell{flex-direction:column}
+  .side{width:100%;height:auto;position:static;flex:none}.main{padding:16px}}
+
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.kpi span{display:block;color:var(--muted);font-size:12px;letter-spacing:.02em}
+.kpi b{display:block;font-size:22px;font-weight:600;margin-top:4px;font-family:"IBM Plex Mono",monospace}
+.kpi.brass b{color:var(--brass)} .kpi.teal b{color:var(--teal)} .kpi.clay b{color:var(--clay)}
+
+/* ---------- الجداول ---------- */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:#F6F8FA;font-weight:600;font-size:12px;color:#41556B;letter-spacing:.02em;white-space:nowrap}
+tbody tr:hover{background:#FAFCFE}
+tfoot td{font-weight:600;background:#F6F8FA;border-top:2px solid var(--line)}
+td.n,th.n{text-align:left;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;direction:ltr}
+.tbl-wrap{overflow-x:auto}
+.empty{padding:26px;text-align:center;color:var(--muted)}
+
+/* ---------- عناصر صغيرة ---------- */
+.tag{display:inline-block;padding:1.5px 8px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.t-ok{background:var(--teal-soft);color:var(--teal)}
+.t-warn{background:var(--brass-soft);color:var(--brass)}
+.t-bad{background:var(--clay-soft);color:var(--clay)}
+.t-neu{background:var(--indigo-soft);color:var(--indigo)}
+.ref{font-size:12.5px;color:var(--indigo);letter-spacing:-.2px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+
+/* الشريط المميز: أثر الحساب */
+.trace{
+  background:#F7F9FB;border:1px solid var(--line);border-right:3px solid var(--brass);
+  border-radius:6px;padding:9px 12px;font-family:"IBM Plex Mono","IBM Plex Sans Arabic",monospace;
+  font-size:12px;line-height:1.9;color:#33465C;white-space:pre-wrap
+}
+
+/* ---------- النماذج ---------- */
+label{display:block;font-size:12.5px;color:#41556B;margin-bottom:4px;font-weight:600}
+input,select,textarea{
+  width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;
+  background:#fff;font-family:inherit;font-size:14px;color:var(--ink)
+}
+input:focus,select:focus,textarea:focus{border-color:var(--indigo);outline:none;box-shadow:0 0 0 3px var(--indigo-soft)}
+.field{margin-bottom:12px}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{
+  display:inline-block;padding:8px 16px;border-radius:6px;border:1px solid var(--indigo);
+  background:var(--indigo);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer
+}
+.btn:hover{background:var(--indigo-2);text-decoration:none;color:#fff}
+.btn.ghost{background:#fff;color:var(--indigo)}
+.btn.ghost:hover{background:var(--indigo-soft);color:var(--indigo)}
+.btn.danger{background:var(--clay);border-color:var(--clay)}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+.btn-link{background:none;border:none;color:var(--clay);cursor:pointer;font:inherit;padding:0}
+
+.flash{padding:10px 14px;border-radius:6px;margin-bottom:14px;font-size:13.5px;border:1px solid}
+.flash.ok{background:var(--teal-soft);border-color:#B9DED5;color:var(--teal)}
+.flash.error{background:var(--clay-soft);border-color:#EEC6C2;color:var(--clay)}
+
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.filters .field{margin:0;min-width:150px}
+
+/* ---------- الدخول ---------- */
+.login-wrap{min-height:100vh;display:grid;place-items:center;background:var(--ink);padding:20px}
+.login{background:#fff;border-radius:12px;padding:30px;width:100%;max-width:370px}
+.login h1{margin:0 0 4px;font-size:21px}
+.login p{margin:0 0 20px;color:var(--muted);font-size:13px}
+.hint{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+
+@media print{.side,.no-print,.filters{display:none}.main{padding:0}body{background:#fff}}
+
+/* ---------- شريط الفلاتر ---------- */
+.filters-card>.filters{padding:12px 14px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.filters .field{margin:0;min-width:150px}
+.filters .field.grow{flex:1 1 240px;min-width:200px}
+.filters .field.sm{min-width:96px;width:110px}
+.filters .field.actions{display:flex;gap:8px;align-items:center;min-width:auto;margin-inline-start:auto}
+.filters label{white-space:nowrap}
+
+/* ---------- شارات وأنواع ---------- */
+.kind-agg{background:#EFE9F7;color:#5B3E8E}
+.kind-det{background:var(--indigo-soft);color:var(--indigo)}
+.rowline td{border-bottom:none;padding-bottom:2px}
+
+/* ---------- الإدخال السريع ---------- */
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs a{padding:7px 16px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:14px}
+.tabs a.on{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+.tabs a:hover{text-decoration:none}
+.quick-grid{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+@media(max-width:900px){.quick-grid{grid-template-columns:1fr}}
+.sess b{font-family:"IBM Plex Mono",monospace}
+kbd{font-family:"IBM Plex Mono",monospace;font-size:11px;background:#F0F3F7;border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:4px;padding:1px 5px;color:#41556B}
+.focus-field input{border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+.chq-block{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:10px}
+.chq-block h4{margin:0 0 8px;font-size:13px;font-weight:600}

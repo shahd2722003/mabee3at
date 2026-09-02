@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}الشيكات{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>الشيكات</h1>
+<p>الشيك يُخصم من الرصيد فور استلامه، ويتحول تلقائياً إلى «تم التحصيل» في تاريخ استحقاقه — وعندها فقط تُحتسب العمولة والبونص على تاريخ الاستحقاق.</p></div>
+<div class="row-actions no-print">
+  <a class="btn ghost" href="{{ url_for('quick', mode='cheque') }}">إدخال سريع للشيكات</a>
+  {% if user.role=='admin' %}<form method="post" action="{{ url_for('jobs_run') }}" style="display:inline">
+    <button class="btn ghost">تشغيل الفحص اليومي الآن</button></form>{% endif %}</div></div>
+
+<div class="grid g3" style="margin-bottom:16px">
+  <div class="kpi brass"><span>شيكات معلّقة</span><b>{{ fmt(totals.pending) }}</b></div>
+  <div class="kpi teal"><span>شيكات محصَّلة</span><b>{{ fmt(totals.cleared) }}</b></div>
+  <div class="kpi clay"><span>شيكات مرتدة</span><b>{{ fmt(totals.bounced) }}</b></div>
+</div>
+
+{{ filter_bar(f, ['q','customer_id','rep_id','date_from','due_from','status'],
+              customers=customers, reps=reps, statuses=statuses,
+              search_hint='رقم الشيك أو البنك أو اسم العميل') }}
+
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>المرجع</th><th>رقم الشيك</th><th>البنك</th><th>العميل</th><th class="n">القيمة</th>
+<th>الاستلام</th><th>الاستحقاق</th><th class="n">المتبقي</th><th>الحالة</th><th class="no-print"></th></tr></thead>
+<tbody>{% for c in rows %}<tr>
+<td class="ref">{{ c.ref_no }}</td><td class="n">{{ c.cheque_number or '—' }}</td><td>{{ c.bank_name or '—' }}</td>
+<td>{{ c.cust }}</td><td class="n">{{ fmt(c.amount) }}</td><td class="n">{{ c.received_date }}</td>
+<td class="n"><b>{{ c.due_date }}</b></td>
+<td class="n">{% if c.status=='pending' %}{% if c.days_left < 0 %}<span class="tag t-bad">متأخر {{ -c.days_left }}</span>
+  {% else %}<span class="tag t-neu">{{ c.days_left }} يوم</span>{% endif %}{% else %}—{% endif %}</td>
+<td>{% if c.status=='pending' %}<span class="tag t-warn">معلّق</span>
+   {% elif c.status=='cleared' %}<span class="tag t-ok">تم التحصيل {{ c.cleared_date }}</span>
+     {% if c.auto_cleared %}<br><span class="small muted">تلقائياً في الاستحقاق</span>{% endif %}
+   {% else %}<span class="tag t-bad">مرتد {{ c.bounce_date }}</span>
+     {% if c.bounce_reason %}<br><span class="small muted">{{ c.bounce_reason }}</span>{% endif %}{% endif %}</td>
+<td class="no-print">{% if c.status in ('pending','cleared') and user.role != 'rep' %}
+  {% if c.status=='pending' %}
+  <form method="post" action="{{ url_for('cheque_status', chid=c.id, status='cleared') }}" style="display:inline">
+    <button class="btn ghost sm">تحصيل الآن</button></form>{% endif %}
+  <button class="btn danger sm" onclick="bounce({{ c.id }}, '{{ c.cheque_number or c.ref_no }}')">ارتداد</button>
+{% endif %}</td></tr>
+{% else %}<tr><td colspan="10" class="empty">لا توجد شيكات تطابق الفلتر.</td></tr>{% endfor %}</tbody></table></div></div>
+
+<dialog id="bdlg" style="border:1px solid var(--line);border-radius:10px;padding:0;max-width:420px;width:92%">
+  <form method="post" id="bform" style="padding:18px">
+    <h3 style="margin:0 0 4px;font-size:16px">تسجيل ارتداد شيك</h3>
+    <p class="small muted" id="bwho"></p>
+    <div class="field"><label>تاريخ الارتداد</label><input type="date" name="when" value="{{ today }}" required></div>
+    <div class="field"><label>السبب (اختياري)</label><input name="reason" placeholder="رصيد غير كافٍ، توقيع غير مطابق…"></div>
+    <p class="small muted">سيُعاد المبلغ إلى رصيد العميل وتُعكس العمولة والبونص إن كانا احتُسبا، مع تسجيل ذلك في سجل التدقيق.</p>
+    <div class="row-actions"><button class="btn danger">تأكيد الارتداد</button>
+      <button type="button" class="btn ghost" onclick="document.getElementById('bdlg').close()">إلغاء</button></div>
+  </form>
+</dialog>
+<script>
+function bounce(id, label){
+  const d=document.getElementById('bdlg');
+  document.getElementById('bform').action = '/cheques/'+id+'/bounced';
+  document.getElementById('bwho').textContent = 'الشيك ' + label;
+  d.showModal();
+}
+</script>
+{% endblock %}

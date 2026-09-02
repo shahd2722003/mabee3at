@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}كشف حساب عميل{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>كشف حساب عميل</h1>
+<p>الفواتير والمرتجعات والتحصيلات، مع فصل الشيكات المعلقة والمحصلة والمرتدة</p></div>
+<button class="btn ghost no-print" onclick="print()">طباعة</button></div>
+
+{{ filter_bar(f, ['customer_id'], customers=custs) }}
+
+{% if cust %}
+<div class="grid g4" style="margin-bottom:18px">
+  <div class="kpi"><span>إجمالي الفواتير</span><b>{{ fmt(totals.invoices) }}</b></div>
+  <div class="kpi"><span>المرتجعات</span><b>{{ fmt(totals.returns) }}</b></div>
+  <div class="kpi teal"><span>التحصيلات</span><b>{{ fmt(totals.collections) }}</b></div>
+  <div class="kpi clay"><span>الرصيد المفتوح</span><b>{{ fmt(totals.balance) }}</b></div>
+</div>
+
+<div class="grid g3" style="margin-bottom:18px">
+  <div class="kpi brass"><span>شيكات معلّقة</span><b>{{ fmt(chq.pending.total) }}</b></div>
+  <div class="kpi teal"><span>شيكات محصَّلة</span><b>{{ fmt(chq.cleared.total) }}</b></div>
+  <div class="kpi clay"><span>شيكات مرتدة</span><b>{{ fmt(chq.bounced.total) }}</b></div>
+</div>
+
+<div class="card"><h3>{{ cust.name }} — الحركة</h3><div class="tbl-wrap"><table>
+<thead><tr><th>التاريخ</th><th>النوع</th><th>المستند</th><th class="n">مدين</th><th class="n">دائن</th><th class="n">الرصيد</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td class="n">{{ r.dt }}</td>
+<td><span class="tag {{ 't-warn' if r.kind=='مرتجع' else ('t-ok' if r.kind.startswith('تحصيل') else ('kind-agg' if 'إجمالية' in r.kind else 't-neu')) }}">{{ r.kind }}</span></td>
+<td class="ref">{{ r.ref_no }}</td>
+<td class="n">{{ fmt(r.amt) if r.amt > 0 else '' }}</td>
+<td class="n">{{ fmt(-r.amt) if r.amt < 0 else '' }}</td>
+<td class="n"><b>{{ fmt(r.balance) }}</b></td></tr>
+{% else %}<tr><td colspan="6" class="empty">لا حركة على هذا العميل.</td></tr>{% endfor %}</tbody></table></div></div>
+
+{% for key, label, cls in [('pending','الشيكات المعلّقة','t-warn'),('cleared','الشيكات المحصَّلة','t-ok'),('bounced','الشيكات المرتدة','t-bad')] %}
+{% if chq[key].rows %}
+<div class="card"><h3>{{ label }} — {{ fmt(chq[key].total) }}</h3><div class="tbl-wrap"><table>
+<thead><tr><th>المرجع</th><th>رقم الشيك</th><th>البنك</th><th class="n">القيمة</th>
+<th>الاستلام</th><th>الاستحقاق</th><th>{{ 'تاريخ التحصيل' if key=='cleared' else ('تاريخ الارتداد والسبب' if key=='bounced' else 'المتبقي') }}</th></tr></thead>
+<tbody>{% for c in chq[key].rows %}<tr><td class="ref">{{ c.ref_no }}</td><td class="n">{{ c.cheque_number or '—' }}</td>
+<td>{{ c.bank_name or '—' }}</td><td class="n">{{ fmt(c.amount) }}</td>
+<td class="n">{{ c.received_date }}</td><td class="n"><b>{{ c.due_date }}</b></td>
+<td class="n">{% if key=='cleared' %}{{ c.cleared_date }}
+  {% elif key=='bounced' %}{{ c.bounce_date }}{% if c.bounce_reason %} <span class="small muted">— {{ c.bounce_reason }}</span>{% endif %}
+  {% else %}<span class="tag {{ cls }}">تحت التحصيل</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div></div>
+{% endif %}{% endfor %}
+{% else %}
+<div class="card"><div class="empty">اختر عميلاً لعرض كشف حسابه.</div></div>
+{% endif %}
+{% endblock %}

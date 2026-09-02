@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}الأصناف{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>الأصناف</h1><p>الكود والاسم واللون والمقاس والأسعار والرصيد المتاح</p></div>
+{% if user.role != 'rep' %}<a class="btn" href="{{ url_for('item_form') }}">إضافة صنف</a>{% endif %}</div>
+{{ filter_bar(f, ['q'], search_hint='كود أو اسم أو لون أو مقاس') }}
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الكود</th><th>الاسم</th><th>اللون</th><th>المقاس</th><th class="n">سعر البيع</th>
+<th class="n">التكلفة</th><th class="n">المتاح</th><th></th></tr></thead>
+<tbody>{% for r in rows %}<tr>
+  <td class="ref">{{ r.code }}</td><td>{{ r.name }}</td><td>{{ r.color or '—' }}</td><td>{{ r.size or '—' }}</td>
+  <td class="n">{{ fmt(r.sale_price) }}</td><td class="n">{{ fmt(r.cost_price) }}</td>
+  <td class="n"><span class="tag {{ 't-bad' if r.qty_available <= 0 else 't-ok' }}">{{ '%g'|format(r.qty_available) }}</span></td>
+  <td class="no-print"><a class="small" href="{{ url_for('rep_stock', apply=1, item_id=r.item_id) }}">حركة</a>
+    {% if user.role != 'rep' %} · <a class="small" href="{{ url_for('item_form', iid=r.item_id) }}">تعديل</a>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="8" class="empty">لا توجد أصناف تطابق الفلتر.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

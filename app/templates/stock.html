@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}المخزون{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>حركة المخزون</h1><p>إضافة، بيع، مرتجع، وتسوية — بالكميات والتكلفة وسعر البيع وتاريخ الحركة</p></div>
+{% if user.role != 'rep' %}<a class="btn" href="{{ url_for('stock_new') }}">تسجيل حركة / رصيد افتتاحي</a>{% endif %}</div>
+
+{{ filter_bar(f, ['q','item_id','date_from','move_type'], items=items, search_hint='كود أو اسم الصنف أو رقم المستند') }}
+
+<div class="card"><h3>الأرصدة الحالية</h3><div class="tbl-wrap"><table>
+<thead><tr><th>الكود</th><th>الصنف</th><th>اللون</th><th>المقاس</th><th class="n">المتاح</th><th class="n">قيمة التكلفة</th></tr></thead>
+<tbody>{% for s in stocks %}<tr><td class="ref">{{ s.code }}</td><td>{{ s.name }}</td><td>{{ s.color or '—' }}</td>
+<td>{{ s.size or '—' }}</td><td class="n">{{ '%g'|format(s.qty_available) }}</td>
+<td class="n">{{ fmt(s.qty_available * s.cost_price) }}</td></tr>{% endfor %}</tbody></table></div></div>
+
+<div class="card"><h3>الحركات</h3><div class="tbl-wrap"><table>
+<thead><tr><th>التاريخ</th><th>الصنف</th><th>النوع</th><th class="n">الكمية</th><th class="n">التكلفة</th>
+<th class="n">سعر البيع</th><th>المستند</th><th>ملاحظات</th></tr></thead>
+<tbody>{% for m in moves %}<tr><td class="n">{{ m.move_date }}</td><td><span class="ref">{{ m.code }}</span> {{ m.name }}</td>
+<td>{{ MOVE_TYPES[m.move_type] }}</td>
+<td class="n" style="color:{{ 'var(--teal)' if m.qty>0 else 'var(--clay)' }}">{{ '%+g'|format(m.qty) }}</td>
+<td class="n">{{ fmt(m.unit_cost) }}</td><td class="n">{{ fmt(m.unit_price) }}</td>
+<td class="ref">{{ m.ref_no or '—' }}</td><td class="small muted">{{ m.notes or '' }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">لا توجد حركات تطابق الفلتر.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

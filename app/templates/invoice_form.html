@@ -1,0 +1,133 @@
+{% extends "base.html" %}{% block title %}فاتورة جديدة{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>فاتورة جديدة</h1>
+<p>الخصم ومدة السداد يُسحبان من بيانات العميل، وتعديلهما هنا لا يغيّر إعدادات العميل</p></div></div>
+
+<div class="tabs no-print">
+  <a href="{{ url_for('invoice_new', invoice_kind='detailed') }}" class="{{ 'on' if kind=='detailed' }}">فاتورة تفصيلية بأصناف</a>
+  <a href="{{ url_for('invoice_new', invoice_kind='aggregate') }}" class="{{ 'on' if kind=='aggregate' }}">فاتورة تاريخية إجمالية</a>
+</div>
+
+{% if kind=='aggregate' %}
+<div class="flash" style="background:#EFE9F7;border-color:#D6C9EA;color:#5B3E8E">
+  فاتورة بقيمة إجمالية بدون أصناف. تدخل في رصيد العميل والتحصيلات و FIFO والعمولة والبونص وتقارير المبيعات بالقيمة،
+  ولا تؤثر في المخزون ولا تظهر في تقارير مبيعات الأصناف.
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('invoice_new', invoice_kind=kind) }}">
+<div class="card"><div class="body"><div class="grid g4">
+  <div class="field"><label>العميل</label><select name="customer_id" id="cust" required>
+    <option value="">— اختر —</option>
+    {% for c in custs %}<option value="{{ c.id }}">{{ c.code }} · {{ c.name }}</option>{% endfor %}</select></div>
+  {% if kind=='aggregate' %}
+  <div class="field"><label>المندوب</label><select name="rep_id" id="rep">
+    <option value="">حسب العميل</option>
+    {% for r in reps %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}</select></div>
+  {% endif %}
+  <div class="field"><label>تاريخ الفاتورة</label><input type="date" name="invoice_date" value="{{ today }}" required></div>
+  {% if kind=='aggregate' %}
+  <div class="field"><label>القيمة الإجمالية النهائية</label>
+    <input type="number" step="0.01" min="0.01" name="total_amount" id="tot" required></div>
+  {% endif %}
+  <div class="field"><label>نسبة الخصم %</label><input type="number" step="0.01" name="discount_pct" id="disc" value="0"></div>
+  <div class="field"><label>مدة السداد (أيام)</label><input type="number" name="credit_days" id="days" value="0"></div>
+  {% if kind=='aggregate' %}
+  <div class="field"><label>تاريخ الاستحقاق</label><input type="date" name="due_date" id="due">
+    <span class="small muted">يُحسب تلقائياً من مدة السداد إن تُرك فارغاً</span></div>
+  <div class="field"><label>رقم مرجعي (اختياري)</label><input name="external_ref" placeholder="رقم الفاتورة الورقية"></div>
+  {% endif %}
+  <div class="field"><label>وسيلة الدفع</label><select name="payment_method" id="pm">
+    {% for k,v in METHODS.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label>ملاحظات</label><input name="notes"></div>
+  {% if kind=='detailed' %}
+  <div class="field"><label>&nbsp;</label>
+    <label class="small" style="font-weight:400"><input type="checkbox" name="is_historical" style="width:auto"> فاتورة تاريخية</label></div>
+  {% if user.role == 'admin' %}<div class="field"><label>&nbsp;</label>
+    <label class="small" style="font-weight:400"><input type="checkbox" name="override_stock" style="width:auto"> تجاوز رصيد المخزون</label></div>{% endif %}
+  {% endif %}
+</div></div></div>
+
+{% if kind=='detailed' %}
+<div class="card"><h3>البنود</h3><div class="tbl-wrap"><table id="lines">
+  <thead><tr><th style="width:45%">الصنف</th><th class="n">المتاح</th><th class="n" style="width:110px">الكمية</th>
+  <th class="n" style="width:130px">سعر الوحدة</th><th class="n">الإجمالي</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="body row-actions">
+    <button type="button" class="btn ghost sm" onclick="addRow()">+ بند</button>
+    <div style="margin-inline-start:auto" class="num">
+      قبل الخصم: <b id="sub">0.00</b> &nbsp;·&nbsp; الخصم: <b id="dsc">0.00</b>
+      &nbsp;·&nbsp; الصافي: <b id="net" style="color:var(--indigo);font-size:17px">0.00</b></div>
+  </div>
+</div>
+{% else %}
+<div class="card"><div class="body num small">
+  القيمة المدخلة هي الصافي بعد الخصم. ما قبل الخصم المحتسب: <b id="gross">0.00</b>
+  &nbsp;·&nbsp; قيمة الخصم: <b id="dscamt">0.00</b>
+</div></div>
+{% endif %}
+
+<div class="row-actions"><button class="btn">ترحيل الفاتورة</button>
+  {% if kind=='aggregate' %}<a class="btn ghost" href="{{ url_for('quick', mode='invoice') }}">الإدخال السريع المتتابع</a>{% endif %}
+  <a class="btn ghost" href="{{ url_for('invoices') }}">إلغاء</a></div>
+</form>
+
+<script>
+const KIND = "{{ kind }}";
+{% if kind=='detailed' %}
+const ITEMS = {{ items|map(attribute='item_id')|list|tojson }}.map((id,i)=>({
+  id, code:{{ items|map(attribute='code')|list|tojson }}[i], name:{{ items|map(attribute='name')|list|tojson }}[i],
+  color:{{ items|map(attribute='color')|list|tojson }}[i], size:{{ items|map(attribute='size')|list|tojson }}[i],
+  price:{{ items|map(attribute='sale_price')|list|tojson }}[i], qty:{{ items|map(attribute='qty_available')|list|tojson }}[i]}));
+
+function addRow(){
+  const tb=document.querySelector('#lines tbody'), tr=document.createElement('tr');
+  tr.innerHTML=`<td><select name="item_id" onchange="pick(this)"><option value="">— اختر صنفاً —</option>`+
+    ITEMS.map(i=>`<option value="${i.id}" data-p="${i.price}" data-q="${i.qty}">${i.code} · ${i.name}${i.color?' · '+i.color:''}${i.size?' · '+i.size:''}</option>`).join('')+
+    `</select></td><td class="n avail muted">—</td>
+     <td><input type="number" step="0.01" name="qty" value="1" oninput="calc()"></td>
+     <td><input type="number" step="0.01" name="unit_price" value="0" oninput="calc()"></td>
+     <td class="n lt">0.00</td>
+     <td><button type="button" class="btn-link" onclick="this.closest('tr').remove();calc()">حذف</button></td>`;
+  tb.appendChild(tr);
+}
+function pick(sel){
+  const o=sel.selectedOptions[0], tr=sel.closest('tr');
+  tr.querySelector('[name=unit_price]').value = o.dataset.p||0;
+  tr.querySelector('.avail').textContent = o.dataset.q ?? '—';
+  calc();
+}
+function calc(){
+  let sub=0;
+  document.querySelectorAll('#lines tbody tr').forEach(tr=>{
+    const q=parseFloat(tr.querySelector('[name=qty]').value)||0;
+    const p=parseFloat(tr.querySelector('[name=unit_price]').value)||0;
+    const lt=q*p; sub+=lt; tr.querySelector('.lt').textContent=lt.toFixed(2);
+  });
+  const d=parseFloat(document.getElementById('disc').value)||0, da=sub*d/100;
+  document.getElementById('sub').textContent=sub.toFixed(2);
+  document.getElementById('dsc').textContent=da.toFixed(2);
+  document.getElementById('net').textContent=(sub-da).toFixed(2);
+}
+addRow();
+{% else %}
+function calc(){
+  const t=parseFloat(document.getElementById('tot').value)||0;
+  const d=parseFloat(document.getElementById('disc').value)||0;
+  const gross = d>0 && d<100 ? t/(1-d/100) : t;
+  document.getElementById('gross').textContent=gross.toFixed(2);
+  document.getElementById('dscamt').textContent=(gross-t).toFixed(2);
+}
+document.getElementById('tot').addEventListener('input',calc);
+{% endif %}
+document.getElementById('disc').addEventListener('input',calc);
+document.getElementById('cust').addEventListener('change', async e=>{
+  if(!e.target.value) return;
+  const c = await (await fetch('/api/customer/'+e.target.value)).json();
+  document.getElementById('disc').value=c.discount_pct;
+  document.getElementById('days').value=c.credit_days;
+  document.getElementById('pm').value=c.payment_method;
+  const rep=document.getElementById('rep'); if(rep) rep.value=c.rep_id;
+  calc();
+});
+</script>
+{% endblock %}

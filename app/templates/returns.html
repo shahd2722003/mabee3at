@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}المرتجعات{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>المرتجعات</h1><p>كل مرتجع مرتبط بفاتورة أصناف ويؤثر على الرصيد والمخزون</p></div>
+{% if user.role != 'rep' %}<a class="btn" href="{{ url_for('return_new') }}">مرتجع جديد</a>{% endif %}</div>
+
+{{ filter_bar(f, ['q','customer_id','rep_id','date_from','status','disc_min'],
+              customers=customers, reps=reps, statuses=statuses,
+              search_hint='رقم المرتجع أو الفاتورة أو اسم العميل') }}
+
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الرقم</th><th>التاريخ</th><th>الفاتورة الأصلية</th><th>العميل</th><th>المندوب</th>
+<th class="n">قبل الخصم</th><th class="n">الخصم</th><th class="n">الصافي</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td class="ref">{{ r.ref_no }}</td><td class="n">{{ r.return_date }}</td>
+<td class="ref">{{ r.inv_ref }}</td><td>{{ r.cust }}</td><td>{{ r.rep }}</td>
+<td class="n">{{ fmt(r.subtotal) }}</td><td class="n">{{ r.discount_pct }}%</td>
+<td class="n">{{ fmt(r.total) }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">لا توجد مرتجعات تطابق الفلتر.</td></tr>{% endfor %}</tbody>
+<tfoot><tr><td colspan="7">{{ rows|length }} مرتجع</td><td class="n">{{ fmt(rows|sum(attribute='total') or 0) }}</td></tr></tfoot>
+</table></div></div>
+{% endblock %}

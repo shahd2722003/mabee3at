@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src http://127.0.0.1:*">
+<title>نظام إدارة المبيعات</title>
+<style>
+  :root{
+    --ink:#14202E; --paper:#EDF1F5; --indigo:#24486F; --brass:#A9761B;
+    --teal:#146B5C; --clay:#A63A32; --line:#D5DDE6;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:32px;
+  }
+  .box{width:100%;max-width:560px;text-align:center}
+  .mark{
+    width:60px;height:60px;margin:0 auto 22px;border-radius:14px;
+    background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:26px;font-weight:700;letter-spacing:-1px;
+  }
+  h1{font-size:21px;margin:0 0 6px;font-weight:600}
+  .sub{color:#5A6B7D;font-size:14px;margin:0 0 30px}
+  .bar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:16px}
+  .bar i{display:block;height:100%;width:35%;background:var(--indigo);border-radius:99px;
+    animation:slide 1.15s ease-in-out infinite}
+  @keyframes slide{0%{margin-inline-start:-35%}100%{margin-inline-start:100%}}
+  .msg{font-size:14px;color:#41556B;min-height:20px}
+  .card{
+    display:none;text-align:start;background:#fff;border:1px solid var(--line);
+    border-radius:10px;padding:20px 22px;margin-top:8px;
+  }
+  .card.on{display:block}
+  .card h2{font-size:16px;margin:0 0 10px;color:var(--clay)}
+  .card p{font-size:14px;line-height:1.75;margin:0 0 12px;color:#2C3E52}
+  pre{
+    background:#F4F7FA;border:1px solid var(--line);border-radius:6px;padding:10px 12px;
+    font-family:"IBM Plex Mono",Consolas,monospace;font-size:11.5px;line-height:1.6;
+    max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-word;
+    direction:ltr;text-align:left;color:#41556B;margin:0 0 14px;
+  }
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  button{
+    font-family:inherit;font-size:14px;padding:9px 20px;border-radius:6px;cursor:pointer;
+    border:1px solid var(--indigo);background:var(--indigo);color:#fff;
+  }
+  button.ghost{background:#fff;color:var(--indigo)}
+  button:hover{opacity:.9}
+  .foot{margin-top:26px;font-size:11.5px;color:#8496A8}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="mark">مب</div>
+  <h1>نظام إدارة المبيعات</h1>
+  <p class="sub">تطبيق سطح المكتب</p>
+
+  <div id="loading">
+    <div class="bar"><i></i></div>
+    <div class="msg" id="msg">جارٍ التحضير…</div>
+  </div>
+
+  <div class="card" id="err">
+    <h2 id="etitle">تعذّر بدء التشغيل</h2>
+    <p id="edetail"></p>
+    <pre id="elog" hidden></pre>
+    <div class="row">
+      <button id="retry">إعادة المحاولة</button>
+      <button class="ghost" id="quit">إغلاق</button>
+    </div>
+  </div>
+
+  <div class="foot" id="ver"></div>
+</div>
+
+<script>
+  var loading = document.getElementById('loading');
+  var errCard = document.getElementById('err');
+  var msg     = document.getElementById('msg');
+
+  function showError(payload) {
+    loading.style.display = 'none';
+    errCard.classList.add('on');
+    document.getElementById('edetail').textContent = payload.message || 'خطأ غير معروف.';
+    var log = document.getElementById('elog');
+    if (payload.detail) { log.hidden = false; log.textContent = payload.detail; }
+    else { log.hidden = true; }
+  }
+
+  function showLoading(text) {
+    errCard.classList.remove('on');
+    loading.style.display = '';
+    msg.textContent = text || 'جارٍ التحضير…';
+  }
+
+  if (window.mabee3at) {
+    window.mabee3at.onStatus(function (s) {
+      if (s.state === 'error') showError(s);
+      else if (s.state === 'ready') msg.textContent = 'جاهز — جارٍ فتح التطبيق…';
+      else showLoading(s.message);
+    });
+
+    window.mabee3at.getInfo().then(function (info) {
+      document.getElementById('ver').textContent = 'الإصدار ' + info.version;
+      if (info.error) showError(info.error);
+    });
+
+    document.getElementById('retry').addEventListener('click', function () {
+      showLoading('إعادة تشغيل الخادم…');
+      window.mabee3at.retry();
+    });
+    document.getElementById('quit').addEventListener('click', function () {
+      window.mabee3at.quit();
+    });
+  } else {
+    // فُتحت الصفحة في متصفح عادي، لا داخل تطبيق سطح المكتب.
+    browserMode();
+  }
+
+  function browserMode() {
+    loading.style.display = 'none';
+    errCard.classList.add('on');
+    document.getElementById('etitle').textContent = 'تشغيل البرنامج في المتصفح';
+    document.getElementById('edetail').innerHTML =
+      'شغّل الملف <b>Start-Mabee3at.bat</b> الموجود في مجلد البرنامج (نقرة مزدوجة)، '
+      + 'وسيفتح المتصفح تلقائياً. لا يحتاج أي تثبيت.';
+    document.getElementById('retry').textContent = 'البحث عن البرنامج وفتحه';
+    document.getElementById('quit').style.display = 'none';
+
+    var log = document.getElementById('elog');
+    log.hidden = false;
+    log.textContent = 'جارٍ البحث عن خادم يعمل على هذا الجهاز…';
+
+    scan();
+    document.getElementById('retry').addEventListener('click', function () {
+      log.textContent = 'جارٍ البحث…';
+      scan();
+    });
+
+    function probe(port) {
+      var url = 'http://127.0.0.1:' + port + '/login';
+      return fetch(url, { mode: 'no-cors', cache: 'no-store' })
+        .then(function () { return port; });
+    }
+
+    function scan() {
+      var ports = [];
+      for (var i = 5000; i <= 5010; i++) ports.push(i);
+      var tries = ports.map(function (pt) {
+        return probe(pt).catch(function () { return null; });
+      });
+      Promise.all(tries).then(function (found) {
+        var hit = found.filter(Boolean)[0];
+        if (hit) {
+          log.textContent = 'وُجد البرنامج على المنفذ ' + hit + ' — جارٍ فتحه…';
+          location.href = 'http://127.0.0.1:' + hit + '/';
+        } else {
+          log.textContent = 'البرنامج غير مُشغَّل حالياً.\n'
+            + 'شغّل Start-Mabee3at.bat ثم اضغط "البحث عن البرنامج وفتحه".';
+        }
+      });
+    }
+  }
+</script>
+</body>
+</html>

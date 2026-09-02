@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% from "_filters.html" import filter_bar with context %}
+{% block title %}المتأخرات وعكس العمولة{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>المتأخرات وعكس العمولة والبونص</h1>
+<p>نهاية المهلة = تاريخ الفاتورة + مدة السداد + السماحية. بعدها يُنشأ قيد سالب على الرصيد غير المحصَّل فقط.</p></div>
+<div class="row-actions no-print">
+  {% if user.role=='admin' %}<form method="post" action="{{ url_for('jobs_run') }}" style="display:inline">
+    <button class="btn ghost">تشغيل الفحص الآن</button></form>{% endif %}
+  <button class="btn ghost" onclick="print()">طباعة</button></div></div>
+
+{{ filter_bar(f, ['q','customer_id','rep_id','status'], customers=customers, reps=reps,
+              statuses=statuses, search_hint='رقم الفاتورة أو اسم العميل') }}
+
+<div class="grid g3" style="margin-bottom:16px">
+  <div class="kpi clay"><span>رصيد متأخر بعد المهلة</span><b>{{ fmt(totals.outstanding) }}</b></div>
+  <div class="kpi brass"><span>سبق عكس عمولته</span><b>{{ fmt(totals.reversed) }}</b></div>
+  <div class="kpi"><span>ينتظر العكس في الفحص القادم</span><b>{{ fmt(totals.pending) }}</b></div>
+</div>
+
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الفاتورة</th><th>العميل</th><th>المندوب</th><th>تاريخ الفاتورة</th><th>الاستحقاق</th>
+<th class="n">سداد + سماحية</th><th>نهاية المهلة</th><th class="n">بعد المهلة</th>
+<th class="n">الرصيد المتبقي</th><th class="n">سبق عكسه</th><th class="n">قيمة العكس</th></tr></thead>
+<tbody>{% for r in rows %}<tr>
+<td class="ref">{{ r.ref_no }}{% if r.kind=='aggregate' %}<br><span class="tag kind-agg">إجمالية</span>{% endif %}</td>
+<td>{{ r.cust }}</td><td>{{ r.rep }}</td>
+<td class="n">{{ r.invoice_date }}</td><td class="n">{{ r.due_date }}</td>
+<td class="n">{{ r.credit_days }} + {{ r.grace_days }}</td>
+<td class="n"><b>{{ r.deadline }}</b></td>
+<td class="n">{% if r.is_late %}<span class="tag t-bad">{{ r.days_past_deadline }} يوم</span>
+  {% else %}<span class="tag t-ok">داخل المهلة</span>{% endif %}</td>
+<td class="n">{{ fmt(r.outstanding) }}</td>
+<td class="n">{{ fmt(r.already_reversed) }}</td>
+<td class="n">{% if r.to_reverse > 0.009 and r.is_late %}<b style="color:var(--clay)">{{ fmt(r.to_reverse) }}</b>
+  {% else %}—{% endif %}</td></tr>
+{% else %}<tr><td colspan="11" class="empty">لا توجد فواتير تطابق الفلتر.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

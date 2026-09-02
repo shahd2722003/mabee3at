@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}المندوبون{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>المندوبون</h1></div>
+{% if user.role == 'admin' %}<a class="btn" href="{{ url_for('rep_form') }}">إضافة مندوب</a>{% endif %}</div>
+<div class="card"><div class="tbl-wrap"><table>
+<thead><tr><th>الكود</th><th>الاسم</th><th>الهاتف</th><th class="n">عملاء</th><th class="n">المبيعات</th>
+<th class="n">عمولة + بونص مستحق</th><th></th></tr></thead>
+<tbody>{% for r in rows %}<tr><td class="ref">{{ r.code }}</td><td>{{ r.name }}</td><td class="n">{{ r.phone or '—' }}</td>
+  <td class="n">{{ r.n_cust }}</td><td class="n">{{ fmt(r.sales) }}</td>
+  <td class="n" style="color:var(--brass);font-weight:600">{{ fmt(r.earned) }}</td>
+  <td class="no-print"><a class="small" href="{{ url_for('rep_commissions', rep_id=r.id) }}">تفاصيل الحساب</a>
+  {% if user.role=='admin' %} · <a class="small" href="{{ url_for('rep_form', rid=r.id) }}">تعديل</a>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="7" class="empty">لا يوجد مندوبون.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}
